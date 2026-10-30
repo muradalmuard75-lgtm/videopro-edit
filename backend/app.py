@@ -34,6 +34,20 @@ FRONTEND_DIR = os.path.join(PROJECT_ROOT, "frontend")
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 os.makedirs(EXPORTS_DIR, exist_ok=True)
 
+# Startup hygiene: ensure fonts directory exists and remove any corrupt HTML downloads
+FONTS_DIR = os.path.join(BASE_DIR, "fonts")
+if os.path.isdir(FONTS_DIR):
+    for fname in os.listdir(FONTS_DIR):
+        fpath = os.path.join(FONTS_DIR, fname)
+        if os.path.isfile(fpath):
+            try:
+                with open(fpath, "rb") as fp:
+                    header = fp.read(32)
+                    if b"<!DOCTYPE" in header or b"<html" in header or b"<svg" in header:
+                        os.remove(fpath)
+            except Exception:
+                pass
+
 app = FastAPI(title="VideoPro Edit API", description="Smart Video Editing & Auto-Splitting Suite")
 
 app.add_middleware(

@@ -371,10 +371,13 @@ def generate_subtitles(
     }
 
 def format_timecode(sec: float) -> str:
-    h = int(sec // 3600)
-    m = int((sec % 3600) // 60)
-    s = int(sec % 60)
-    ms = int(round((sec - int(sec)) * 1000))
+    total_ms = int(round(max(0.0, float(sec)) * 1000))
+    ms = total_ms % 1000
+    total_s = total_ms // 1000
+    s = total_s % 60
+    total_m = total_s // 60
+    m = total_m % 60
+    h = total_m // 60
     return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
 
 def build_srt(cues: List[Dict[str, Any]]) -> str:
@@ -405,14 +408,14 @@ def hex_to_ass(hex_str: str, alpha: str = "00") -> str:
 
 def build_ass(
     cues: List[Dict[str, Any]],
-    font_name: str = "Cairo",
-    font_size: int = 46,
-    text_color: str = "#facc15",
+    font_name: Optional[str] = None,
+    font_size: Optional[int] = None,
+    text_color: Optional[str] = None,
     outline_color: str = "#000000",
-    outline_width: float = 3.5,
-    back_color: str = "&H80000000",
-    border_style: int = 1,
-    shadow: float = 1.0,
+    outline_width: Optional[float] = None,
+    back_color: Optional[str] = None,
+    border_style: Optional[int] = None,
+    shadow: Optional[float] = None,
     position: str = "bottom",
     style_preset: Optional[str] = None,
     pop_animation: bool = True,
@@ -426,32 +429,29 @@ def build_ass(
     if chunk_for_reels:
         cues = chunk_cues_for_reels(cues)
 
-    # Apply preset if specified
+    # Apply preset defaults
     preset_key = (style_preset or "").lower()
-    if preset_key in PRESET_STYLES:
-        preset = PRESET_STYLES[preset_key]
-        if not font_name or font_name == "Amiri":
-            font_name = preset.get("font_name", font_name)
-        if font_size == 40 or font_size == 42:
-            font_size = preset.get("font_size", font_size)
-        if text_color == "#facc15" and "text_color" in preset:
-            text_color = preset["text_color"]
-        border_style = preset.get("border_style", border_style)
-        outline_width = preset.get("outline_width", outline_width)
-        back_color = preset.get("back_color", back_color)
-        shadow = preset.get("shadow", shadow)
+    preset = PRESET_STYLES.get(preset_key, {})
+
+    resolved_font = font_name or preset.get("font_name", "Cairo")
+    resolved_size = font_size if font_size is not None else preset.get("font_size", 46)
+    resolved_color = text_color or preset.get("text_color", "#facc15")
+    resolved_border = border_style if border_style is not None else preset.get("border_style", 1)
+    resolved_outline = outline_width if outline_width is not None else preset.get("outline_width", 3.5)
+    resolved_back = back_color or preset.get("back_color", "&H80000000")
+    resolved_shadow = shadow if shadow is not None else preset.get("shadow", 1.0)
 
     # Clean font name
-    clean_font = font_name.split(",")[0].replace("'", "").replace('"', "").strip()
+    clean_font = str(resolved_font).split(",")[0].replace("'", "").replace('"', "").strip()
     if not clean_font:
         clean_font = "Cairo"
 
-    pri_color = hex_to_ass(text_color, "00")
+    pri_color = hex_to_ass(resolved_color, "00")
     out_color = hex_to_ass(outline_color, "00")
-    if str(back_color).startswith("&H"):
-        back_box = back_color
+    if str(resolved_back).startswith("&H"):
+        back_box = resolved_back
     else:
-        back_box = hex_to_ass(back_color, "80")
+        back_box = hex_to_ass(resolved_back, "80")
 
     alignment = 2
     margin_v = 70
@@ -470,7 +470,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: VideoProReels,{clean_font},{font_size},{pri_color},&H00000000,{out_color},{back_box},-1,0,0,0,100,100,0,0,{border_style},{outline_width},{shadow},{alignment},40,40,{margin_v},1
+Style: VideoProReels,{clean_font},{resolved_size},{pri_color},&H00000000,{out_color},{back_box},-1,0,0,0,100,100,0,0,{resolved_border},{resolved_outline},{resolved_shadow},{alignment},40,40,{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -479,13 +479,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     anim_tag = "{\\fscx112\\fscy112\\t(0,100,\\fscx100\\fscy100)}" if pop_animation else ""
 
     def fmt_ass_time(sec: float) -> str:
-        h = int(sec // 3600)
-        m = int((sec % 3600) // 60)
-        s = int(sec % 60)
-        cs = int(round((sec - int(sec)) * 100))
-        if cs >= 100:
-            s += 1
-            cs -= 100
+        total_cs = int(round(max(0.0, float(sec)) * 100))
+        cs = total_cs % 100
+        total_s = total_cs // 100
+        s = total_s % 60
+        total_m = total_s // 60
+        m = total_m % 60
+        h = total_m // 60
         return f"{h}:{m:02d}:{s:02d}.{cs:02d}"
 
     for cue in cues:

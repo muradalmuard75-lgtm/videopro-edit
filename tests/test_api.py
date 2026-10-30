@@ -155,6 +155,17 @@ class TestVideoProSuite(unittest.TestCase):
         self.assertIn(",3,", ass_box) # BorderStyle=3
         self.assertIn("&H00ffffff", ass_box)
 
+        # Test build_ass with classic_white and Amiri
+        ass_amiri = build_ass(chunked, style_preset="classic_white", font_name="Amiri")
+        self.assertIn("Amiri", ass_amiri)
+        self.assertIn("&H00ffffff", ass_amiri)
+
+        # Test boundary timestamps
+        from ai_subtitles import format_timecode
+        tc = format_timecode(59.999)
+        self.assertEqual(tc, "00:01:00.000")
+        self.assertNotIn("60", tc)
+
     def test_burn_subtitles_with_tiktok_reels_styling(self):
         import json
         cues = [

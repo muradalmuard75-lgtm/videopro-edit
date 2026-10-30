@@ -26,6 +26,11 @@ RUN python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', dev
 COPY backend/ ./backend/
 COPY frontend/ ./frontend/
 
+# Clean any invalid font artifacts and download official Cairo font for viral Reels/TikTok styling
+RUN mkdir -p /app/backend/fonts && \
+    rm -f /app/backend/fonts/Cairo-Bold.ttf && \
+    curl -L -s -o /app/backend/fonts/Cairo.ttf https://raw.githubusercontent.com/google/fonts/main/ofl/cairo/Cairo%5Bslnt%2Cwght%5D.ttf || true
+
 WORKDIR /app/backend
 
 EXPOSE 8000

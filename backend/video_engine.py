@@ -735,50 +735,83 @@ def burn_subtitles_into_video(
         chunk_for_reels=False
     )
 
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     temp_ass = os.path.join(os.path.dirname(output_path), f"subs_{os.path.basename(output_path)}.ass")
     with open(temp_ass, "w", encoding="utf-8") as f:
         f.write(ass_content)
 
-    # Use ass filter in ffmpeg with ultrafast preset and fixed thread count for maximum cloud speed
-    escaped_ass = temp_ass.replace("\\", "/").replace(":", "\\:")
-    fonts_dir = os.path.join(backend_dir, "fonts")
+    try:
+        # Sanitize fonts directory by removing any corrupt HTML downloads
+        fonts_dir = os.path.join(backend_dir, "fonts")
+        if os.path.isdir(fonts_dir):
+            for fname in os.listdir(fonts_dir):
+                fpath = os.path.join(fonts_dir, fname)
+                if os.path.isfile(fpath):
+                    try:
+                        with open(fpath, "rb") as fp:
+                            header = fp.read(32)
+                            if b"<!DOCTYPE" in header or b"<html" in header or b"<svg" in header:
+                                os.remove(fpath)
+                    except Exception:
+                        pass
 
-    if os.path.isdir(fonts_dir):
-        escaped_fonts = fonts_dir.replace("\\", "/").replace(":", "\\:")
-        ass_filter = f"ass=filename='{escaped_ass}':fontsdir='{escaped_fonts}'"
-    else:
-        ass_filter = f"ass='{escaped_ass}'"
+        # Use ass filter in ffmpeg with ultrafast preset and fixed thread count for maximum cloud speed
+        escaped_ass = temp_ass.replace("\\", "/").replace(":", "\\:").replace("'", "'\\''")
 
-    info = get_video_info(video_path)
-    has_audio = info.get("has_audio", True)
-    audio_flags = ["-c:a", "copy"] if has_audio else ["-an"]
+        if os.path.isdir(fonts_dir):
+            escaped_fonts = fonts_dir.replace("\\", "/").replace(":", "\\:").replace("'", "'\\''")
+            ass_filter = f"ass=filename='{escaped_ass}':fontsdir='{escaped_fonts}'"
+        else:
+            ass_filter = f"ass='{escaped_ass}'"
 
-    cmd = [
-        "ffmpeg", "-y",
-        "-threads", "2",
-        "-i", video_path,
-        "-vf", ass_filter,
-        "-c:v", "libx264",
-        "-preset", "ultrafast",
-        "-tune", "fastdecode",
-        "-crf", "23",
-        *audio_flags,
-        "-sn",
-        "-movflags", "+faststart",
-        output_path
-    ]
+        info = get_video_info(video_path)
+        has_audio = info.get("has_audio", True)
+        audio_flags = ["-c:a", "copy"] if has_audio else ["-an"]
 
-    res = run_command(cmd)
+        cmd = [
+            "ffmpeg", "-y",
+            "-threads", "2",
+            "-i", video_path,
+            "-vf", ass_filter,
+            "-c:v", "libx264",
+            "-preset", "ultrafast",
+            "-tune", "fastdecode",
+            "-crf", "23",
+            *audio_flags,
+            "-sn",
+            "-movflags", "+faststart",
+            output_path
+        ]
 
-    # Cleanup temp ass
-    if os.path.exists(temp_ass):
-        try:
-            os.remove(temp_ass)
-        except Exception:
-            pass
+        res = run_command(cmd)
 
-    if res.returncode != 0:
-        return {"error": f"Failed to burn subtitles into video: {res.stderr}"}
+        # Retry with re-encoded AAC audio if stream copying failed (e.g. PCM / non-MP4 native codec)
+        if res.returncode != 0 and has_audio:
+            cmd_fallback = [
+                "ffmpeg", "-y",
+                "-threads", "2",
+                "-i", video_path,
+                "-vf", ass_filter,
+                "-c:v", "libx264",
+                "-preset", "ultrafast",
+                "-tune", "fastdecode",
+                "-crf", "23",
+                "-c:a", "aac", "-b:a", "128k",
+                "-sn",
+                "-movflags", "+faststart",
+                output_path
+            ]
+            res = run_command(cmd_fallback)
+
+        if res.returncode != 0:
+            return {"error": f"Failed to burn subtitles into video: {res.stderr}"}
+    finally:
+        # Cleanup temp ass
+        if os.path.exists(temp_ass):
+            try:
+                os.remove(temp_ass)
+            except Exception:
+                pass
 
     out_info = get_video_info(output_path)
     return {

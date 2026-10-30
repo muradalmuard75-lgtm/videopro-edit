@@ -602,21 +602,28 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
       const s = cue.start_sec || 0;
       const e = cue.end_sec || s + 2;
       const fmt = (sec) => {
-        const h = Math.floor(sec / 3600);
-        const m = Math.floor((sec % 3600) / 60);
-        const sc = Math.floor(sec % 60);
-        const cs = Math.round((sec - Math.floor(sec)) * 100);
+        const totalCs = Math.round(Math.max(0, Number(sec)) * 100);
+        const cs = totalCs % 100;
+        const totalS = Math.floor(totalCs / 100);
+        const sc = totalS % 60;
+        const totalM = Math.floor(totalS / 60);
+        const m = totalM % 60;
+        const h = Math.floor(totalM / 60);
         return `${h}:${String(m).padStart(2, "0")}:${String(sc).padStart(2, "0")}.${String(cs).padStart(2, "0")}`;
+      };
       events.push(`Dialogue: 0,${fmt(s)},${fmt(e)},VideoProReels,,0,0,0,,${cue.text}`);
     });
     return header + events.join("\n") + "\n";
   }
 
   formatTimecode(sec) {
-    const h = Math.floor(sec / 3600);
-    const m = Math.floor((sec % 3600) / 60);
-    const s = Math.floor(sec % 60);
-    const ms = Math.round((sec - Math.floor(sec)) * 1000);
+    const totalMs = Math.round(Math.max(0, Number(sec)) * 1000);
+    const ms = totalMs % 1000;
+    const totalS = Math.floor(totalMs / 1000);
+    const s = totalS % 60;
+    const totalM = Math.floor(totalS / 60);
+    const m = totalM % 60;
+    const h = Math.floor(totalM / 60);
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${String(ms).padStart(3, "0")}`;
   }
 
