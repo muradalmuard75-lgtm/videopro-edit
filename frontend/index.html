@@ -88,6 +88,19 @@
       </button>
     </nav>
 
+    <!-- Mobile Header Quick Actions (Touch friendly on mobile) -->
+    <div class="flex lg:hidden items-center gap-1 sm:gap-1.5 text-xs">
+      <button id="mobile-nav-projects-btn" class="px-2 sm:px-2.5 py-1 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-gray-200 text-[11px] font-medium border border-gray-700/60 cursor-pointer">
+        مشاريعي
+      </button>
+      <button id="mobile-nav-pricing-btn" class="px-2 sm:px-2.5 py-1 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-gray-200 text-[11px] font-medium border border-gray-700/60 cursor-pointer">
+        الأسعار
+      </button>
+      <button id="mobile-nav-help-btn" class="p-1 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-gray-300 text-xs border border-gray-700/60 cursor-pointer" title="المساعدة">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </button>
+    </div>
+
     <!-- Left side: Login & User Profile -->
     <div class="flex items-center gap-2 sm:gap-3">
       <button id="nav-login-btn" class="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-lg bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-bold text-xs shadow-md transition cursor-pointer">
@@ -100,8 +113,21 @@
     </div>
   </header>
 
-  <!-- Notification Banner -->
-  <div id="upload-notification" class="hidden w-full bg-purple-900/60 border-b border-purple-500/40 px-4 py-2 text-center text-xs text-purple-200 font-semibold transition"></div>
+  <!-- Notification Banner / Inline Upload Tracker -->
+  <div id="upload-notification" class="hidden w-full bg-purple-950/90 border-b border-purple-500/50 px-3 sm:px-6 py-2 transition z-30">
+    <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-4 text-xs">
+      <div class="flex items-center gap-2 truncate">
+        <svg class="w-4 h-4 text-purple-400 animate-spin shrink-0" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+        <span id="upload-notification-text" class="text-purple-200 font-medium truncate">جاري رفع ومعالجة الفيديو...</span>
+      </div>
+      <div class="w-full sm:w-64 flex items-center gap-2 shrink-0">
+        <div class="flex-1 h-2 bg-gray-900 rounded-full overflow-hidden border border-purple-500/30">
+          <div id="upload-notification-bar" class="h-full bg-gradient-to-r from-purple-500 to-indigo-400 rounded-full w-0 transition-all duration-150"></div>
+        </div>
+        <span id="upload-notification-percent" class="font-mono font-bold text-purple-300 text-[11px] shrink-0">0%</span>
+      </div>
+    </div>
+  </div>
 
   <!-- MAIN STUDIO LAYOUT: Fully responsive order (Mobile shows Player & Timeline first, Desktop shows 3 columns) -->
   <main class="flex-1 w-full max-w-[1720px] mx-auto p-3 sm:p-5 flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-5 items-start">
@@ -179,8 +205,8 @@
       <!-- Timeline Toolbar Controls -->
       <div class="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-gray-800/60">
         
-        <!-- Left: Editing tools (Undo, Redo, Cut, Delete, Timecode) -->
-        <div class="flex items-center gap-1.5 sm:gap-2.5">
+        <!-- Left: Editing tools (Undo, Redo, Cut, Split, Delete, Timecode) -->
+        <div class="flex items-center gap-1 sm:gap-2">
           <button id="timeline-undo-btn" class="p-1 sm:p-1.5 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition cursor-pointer" title="تراجع (Ctrl+Z)">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
           </button>
@@ -190,7 +216,10 @@
           <button id="timeline-cut-btn" class="p-1 sm:p-1.5 rounded hover:bg-purple-900/40 text-purple-400 hover:text-purple-300 transition cursor-pointer" title="قص الفيديو عند موضع المؤشر">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L12 12m0 0l-2.879-2.879a3 3 0 114.242-4.242L12 12z"/></svg>
           </button>
-          <button id="timeline-delete-btn" class="p-1 sm:p-1.5 rounded hover:bg-red-950/40 text-gray-400 hover:text-red-400 transition cursor-pointer" title="حذف الجزء المحدد أو إعادة ضبط التقطيع">
+          <button id="timeline-split-btn" class="p-1 sm:p-1.5 rounded hover:bg-indigo-900/40 text-indigo-400 hover:text-indigo-300 transition cursor-pointer" title="تقطيع الفيديو وتقسيم الفواصل">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+          </button>
+          <button id="timeline-delete-btn" class="p-1 sm:p-1.5 rounded hover:bg-red-950/40 text-gray-400 hover:text-red-400 transition cursor-pointer" title="حذف نقطة القطع">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
 
@@ -217,11 +246,11 @@
         </div>
 
         <!-- Right: Zoom Controls with +/- buttons -->
-        <div class="hidden sm:flex items-center gap-1.5 text-gray-400">
+        <div class="flex items-center gap-1 text-gray-400">
           <button id="zoom-out-btn" class="p-1 hover:text-white transition cursor-pointer rounded hover:bg-gray-800" title="تصغير التايم لاين">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"/></svg>
           </button>
-          <input type="range" id="timeline-zoom-slider" min="0.5" max="2.5" step="0.1" value="1.0" class="w-16 sm:w-20 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500" title="التحكم في تكبير التايم لاين">
+          <input type="range" id="timeline-zoom-slider" min="0.5" max="2.5" step="0.1" value="1.0" class="w-14 sm:w-20 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500" title="التحكم في تكبير التايم لاين">
           <button id="zoom-in-btn" class="p-1 hover:text-white transition cursor-pointer rounded hover:bg-gray-800" title="تكبير التايم لاين">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"/></svg>
           </button>
@@ -250,7 +279,7 @@
         </div>
 
         <!-- Tracks Container with Interactive Playhead -->
-        <div id="tracks-wrapper" class="flex-1 relative flex flex-col gap-2 select-none cursor-pointer overflow-hidden touch-none">
+        <div id="tracks-wrapper" class="flex-1 relative flex flex-col gap-2 select-none cursor-pointer overflow-hidden touch-none" dir="ltr">
           
           <!-- Ruler -->
           <div id="timeline-ruler" class="w-full h-4 relative overflow-hidden"></div>
@@ -870,7 +899,10 @@
             <p id="upload-filename-display" class="text-xs text-gray-400 truncate max-w-[200px] sm:max-w-[240px]">video.mp4</p>
           </div>
         </div>
-        <span id="upload-percentage-badge" class="px-2.5 py-1 rounded-full bg-purple-900/60 text-purple-300 font-mono font-bold text-xs border border-purple-500/40">0%</span>
+        <div class="flex items-center gap-2">
+          <span id="upload-percentage-badge" class="px-2.5 py-1 rounded-full bg-purple-900/60 text-purple-300 font-mono font-bold text-xs border border-purple-500/40">0%</span>
+          <button id="close-upload-modal" class="text-gray-400 hover:text-white transition cursor-pointer p-1" title="إغلاق">✕</button>
+        </div>
       </div>
 
       <!-- Progress Bar -->
@@ -1489,7 +1521,10 @@
             <p id="export-details-display" class="text-xs text-gray-400">1080p Full HD • MP4</p>
           </div>
         </div>
-        <span id="export-percent-badge" class="px-2.5 py-1 rounded-full bg-purple-900/60 text-purple-300 font-mono font-bold text-xs border border-purple-500/40">0%</span>
+        <div class="flex items-center gap-2">
+          <span id="export-percent-badge" class="px-2.5 py-1 rounded-full bg-purple-900/60 text-purple-300 font-mono font-bold text-xs border border-purple-500/40">0%</span>
+          <button id="close-export-modal" class="text-gray-400 hover:text-white transition cursor-pointer p-1" title="إغلاق">✕</button>
+        </div>
       </div>
 
       <!-- Export progress bar -->
@@ -1514,9 +1549,14 @@
 
       <div id="export-status-text" class="text-xs text-center text-purple-300 font-semibold">جاري التصدير والمعالجة...</div>
 
-      <a id="export-download-btn" href="#" class="hidden w-full py-2.5 btn-primary text-xs sm:text-sm shadow-xl text-center cursor-pointer" download>
-        تحميل الفيديو الآن ⬇️
-      </a>
+      <div class="flex items-center gap-2">
+        <a id="export-download-btn" href="#" class="hidden flex-1 py-2.5 btn-primary text-xs sm:text-sm shadow-xl text-center cursor-pointer" download>
+          تحميل الفيديو الآن ⬇️
+        </a>
+        <button id="done-export-btn" class="hidden px-4 py-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-bold border border-gray-700 transition cursor-pointer">
+          إغلاق
+        </button>
+      </div>
     </div>
   </div>
 

@@ -58,9 +58,15 @@ class VideoPlayer {
       this.updateTimeDisplay();
     });
 
-    // Volume button click: Mute/Unmute toggle
+    // Volume button click: Mute/Unmute toggle + mobile slider toggle
     if (this.volumeBtn) {
-      this.volumeBtn.addEventListener("click", () => this.toggleMute());
+      this.volumeBtn.addEventListener("click", () => {
+        const sliderBox = document.getElementById("volume-slider-box");
+        if (sliderBox && window.matchMedia("(hover: none)").matches) {
+          sliderBox.classList.toggle("active");
+        }
+        this.toggleMute();
+      });
     }
 
     // Volume slider input

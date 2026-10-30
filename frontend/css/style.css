@@ -158,20 +158,38 @@ body {
 
 .playhead-handle {
   position: absolute;
-  top: -12px;
+  top: -14px;
   transform: translateX(50%);
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   background: #c084fc;
   border-radius: 50% 50% 50% 0;
   rotate: -45deg;
   cursor: grab;
   box-shadow: 0 0 10px rgba(168, 85, 247, 0.8);
   z-index: 45;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+/* Enlarge touch target for mobile fingertips */
+.playhead-handle::after {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
+  cursor: grab;
 }
 
 .playhead-handle:active {
   cursor: grabbing;
+}
+
+/* Mobile volume slider toggle */
+#volume-slider-box.active {
+  display: flex !important;
 }
 
 /* Filmstrip frames */

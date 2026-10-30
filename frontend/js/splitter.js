@@ -20,13 +20,13 @@ class VideoSplitter {
   setupListeners() {
     // Open modal buttons
     const triggerBtn = document.getElementById("tool-split-btn");
-    const timelineCutBtn = document.getElementById("timeline-cut-btn");
+    const timelineSplitBtn = document.getElementById("timeline-split-btn");
 
     if (triggerBtn) {
       triggerBtn.addEventListener("click", () => this.openModal());
     }
-    if (timelineCutBtn) {
-      timelineCutBtn.addEventListener("click", () => this.openModal());
+    if (timelineSplitBtn) {
+      timelineSplitBtn.addEventListener("click", () => this.openModal());
     }
 
     // Close modal

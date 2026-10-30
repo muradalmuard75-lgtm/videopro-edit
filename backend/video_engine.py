@@ -636,10 +636,28 @@ def add_text_to_video(
     else: # bottom
         y_pos = "h*0.82"
 
-    # Escape text for drawtext
-    escaped_text = text.replace(":", "\\:").replace("'", "\\'").replace("%", "\\%")
+    # Normalize hex color for FFmpeg
+    safe_font_color = font_color.replace("#", "0x") if font_color.startswith("#") else font_color
 
-    vf = f"drawtext=text='{escaped_text}':fontsize={font_size}:fontcolor={font_color}:box=1:boxcolor={box_color}:boxborderw=10:x=(w-text_w)/2:y={y_pos}"
+    # Escape text for drawtext
+    escaped_text = text.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'").replace("%", "\\%")
+
+    # Discover best available TrueType font for Arabic and Unicode glyphs
+    font_file = None
+    for candidate in [
+        "/usr/share/fonts/opentype/fonts-hosny-amiri/Amiri-Bold.ttf",
+        "/usr/share/fonts/opentype/fonts-hosny-amiri/Amiri-Regular.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+    ]:
+        if os.path.exists(candidate):
+            font_file = candidate
+            break
+
+    font_opt = f":fontfile='{font_file}'" if font_file else ""
+
+    vf = f"drawtext=text='{escaped_text}'{font_opt}:fontsize={font_size}:fontcolor={safe_font_color}:box=1:boxcolor={box_color}:boxborderw=10:x=(w-text_w)/2:y={y_pos}"
 
     cmd = [
         "ffmpeg", "-y",

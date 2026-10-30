@@ -74,6 +74,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusText = document.getElementById("upload-status-text");
     const spinner = document.getElementById("upload-status-spinner");
     const notifyEl = document.getElementById("upload-notification");
+    const notifyText = document.getElementById("upload-notification-text");
+    const notifyBar = document.getElementById("upload-notification-bar");
+    const notifyPercent = document.getElementById("upload-notification-percent");
 
     // Open upload progress modal
     if (uploadModal) {
@@ -87,42 +90,50 @@ document.addEventListener("DOMContentLoaded", () => {
     if (spinner) spinner.classList.remove("hidden");
 
     if (notifyEl) {
-      notifyEl.innerText = `جاري رفع ومعالجة الفيديو: ${file.name} (0%)`;
       notifyEl.classList.remove("hidden");
+      if (notifyText) notifyText.innerText = `جاري رفع ومعالجة الفيديو: ${file.name} (0%)`;
+      if (notifyBar) notifyBar.style.width = "0%";
+      if (notifyPercent) notifyPercent.innerText = "0%";
     }
 
     const xhr = new XMLHttpRequest();
     window.activeUploadXHR = xhr;
     const startTime = Date.now();
+    const fileSize = file.size || 0;
 
     // Progress event
     xhr.upload.addEventListener("progress", (e) => {
-      if (e.lengthComputable) {
-        const percent = Math.min(100, Math.round((e.loaded / e.total) * 100));
-        const loadedMB = (e.loaded / (1024 * 1024)).toFixed(1);
-        const totalMB = (e.total / (1024 * 1024)).toFixed(1);
+      const totalBytes = (e.lengthComputable && e.total > 0) ? e.total : fileSize;
+      const loadedBytes = e.loaded;
+      const percent = totalBytes > 0 ? Math.min(100, Math.round((loadedBytes / totalBytes) * 100)) : 50;
 
-        const elapsedSec = (Date.now() - startTime) / 1000;
-        const speedMBs = elapsedSec > 0 ? ((e.loaded / (1024 * 1024)) / elapsedSec).toFixed(1) : "0.0";
+      const loadedMB = (loadedBytes / (1024 * 1024)).toFixed(1);
+      const totalMB = totalBytes > 0 ? (totalBytes / (1024 * 1024)).toFixed(1) : loadedMB;
 
-        if (percentBadge) percentBadge.innerText = `${percent}%`;
-        if (progressBar) progressBar.style.width = `${percent}%`;
-        if (sizeDisplay) sizeDisplay.innerText = `${loadedMB} MB / ${totalMB} MB`;
-        if (speedDisplay) speedDisplay.innerText = `${speedMBs} MB/s`;
+      const elapsedSec = (Date.now() - startTime) / 1000;
+      const speedMBs = elapsedSec > 0 ? ((loadedBytes / (1024 * 1024)) / elapsedSec).toFixed(1) : "0.0";
 
-        if (percent < 100) {
-          if (statusText) statusText.innerText = `جاري رفع الفيديو: ${percent}% (${loadedMB}MB من ${totalMB}MB)`;
-          if (notifyEl) notifyEl.innerText = `جاري رفع الفيديو: ${percent}% • ${loadedMB}MB / ${totalMB}MB`;
-        } else {
-          if (statusText) statusText.innerText = "جاري معالجة الفيديو في الخادم وتوليد المعاينة...";
-          if (notifyEl) notifyEl.innerText = "اكتمل الرفع! جاري قراءة بيانات الفيديو...";
-        }
+      if (percentBadge) percentBadge.innerText = `${percent}%`;
+      if (progressBar) progressBar.style.width = `${percent}%`;
+      if (sizeDisplay) sizeDisplay.innerText = `${loadedMB} MB / ${totalMB} MB`;
+      if (speedDisplay) speedDisplay.innerText = `${speedMBs} MB/s`;
+
+      if (notifyBar) notifyBar.style.width = `${percent}%`;
+      if (notifyPercent) notifyPercent.innerText = `${percent}%`;
+
+      if (percent < 100) {
+        if (statusText) statusText.innerText = `جاري رفع الفيديو: ${percent}% (${loadedMB}MB من ${totalMB}MB)`;
+        if (notifyText) notifyText.innerText = `جاري رفع الفيديو: ${percent}% (${loadedMB}MB / ${totalMB}MB) • ${speedMBs} MB/s`;
+      } else {
+        if (statusText) statusText.innerText = "جاري معالجة الفيديو في الخادم وتوليد المعاينة...";
+        if (notifyText) notifyText.innerText = "اكتمل الرفع 100%! جاري معالجة الفيديو وتجهيز الاستوديو...";
       }
     });
 
     // Complete event
     xhr.addEventListener("load", () => {
       window.activeUploadXHR = null;
+      if (fileInput) fileInput.value = "";
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           const data = JSON.parse(xhr.responseText);
@@ -136,23 +147,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
           if (data.info && data.info.duration) {
             timeline.duration = data.info.duration;
+            timeline.setTime(0);
             timeline.renderRuler();
             timeline.drawAudioWaveform();
             timeline.renderFilmstrip();
           }
 
-          if (statusText) statusText.innerText = `تم رفع ومعالجة الفيديو بنجاح! (${data.info?.resolution || '1080p'})`;
-          if (notifyEl) {
-            notifyEl.innerText = `تم رفع الفيديو بنجاح! (${data.info?.resolution || '1080p'} • ${data.info?.formatted_duration || ''})`;
-            setTimeout(() => notifyEl.classList.add("hidden"), 5000);
-          }
+          if (percentBadge) percentBadge.innerText = "100%";
+          if (progressBar) progressBar.style.width = "100%";
+          if (notifyBar) notifyBar.style.width = "100%";
+          if (notifyPercent) notifyPercent.innerText = "100%";
+
+          const resText = data.info?.resolution || '1080p';
+          const durText = data.info?.formatted_duration || '';
+          if (statusText) statusText.innerText = `تم رفع ومعالجة الفيديو بنجاح! (${resText} • ${durText})`;
+          if (notifyText) notifyText.innerText = `تم رفع الفيديو بنجاح! (${resText} • ${durText})`;
+          timeline.showToast(`🎉 تم رفع ومعالجة "${file.name}" بنجاح!`);
+
+          setTimeout(() => {
+            if (notifyEl) notifyEl.classList.add("hidden");
+          }, 5000);
 
           // Save project to recent projects store
           saveProject({
             id: data.video_id,
             name: file.name,
-            duration: data.info?.formatted_duration || "01:24",
-            resolution: data.info?.resolution || "1920x1080",
+            duration: durText || "01:24",
+            resolution: resText,
             size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
             date: new Date().toLocaleDateString("ar-EG"),
           });
@@ -162,27 +183,31 @@ document.addEventListener("DOMContentLoaded", () => {
               uploadModal.classList.add("hidden");
               uploadModal.classList.remove("flex");
             }
-          }, 1000);
+          }, 1200);
         } catch (err) {
           if (statusText) statusText.innerText = `خطأ في المعالجة: ${err.message}`;
+          if (notifyText) notifyText.innerText = `خطأ في المعالجة: ${err.message}`;
         }
       } else {
         if (statusText) statusText.innerText = `فشل الرفع (كود الخطأ: ${xhr.status})`;
+        if (notifyText) notifyText.innerText = `فشل الرفع (كود الخطأ: ${xhr.status})`;
       }
     });
 
     // Error event
     xhr.addEventListener("error", () => {
       window.activeUploadXHR = null;
+      if (fileInput) fileInput.value = "";
       if (statusText) statusText.innerText = "حدث خطأ في الاتصال بالخادم أثناء الرفع";
-      if (notifyEl) notifyEl.innerText = "فشل رفع الفيديو. يرجى التحقق من اتصالك.";
+      if (notifyText) notifyText.innerText = "فشل رفع الفيديو. يرجى التحقق من اتصالك.";
     });
 
     // Abort event
     xhr.addEventListener("abort", () => {
       window.activeUploadXHR = null;
+      if (fileInput) fileInput.value = "";
       if (statusText) statusText.innerText = "تم إلغاء رفع الفيديو";
-      if (notifyEl) notifyEl.innerText = "تم إلغاء الرفع";
+      if (notifyText) notifyText.innerText = "تم إلغاء الرفع";
       setTimeout(() => notifyEl?.classList.add("hidden"), 2500);
     });
 
@@ -192,8 +217,8 @@ document.addEventListener("DOMContentLoaded", () => {
     xhr.send(formData);
   }
 
-  // Cancel Upload Handler
-  document.getElementById("cancel-upload-btn")?.addEventListener("click", () => {
+  // Cancel & Close Upload Handler
+  const dismissUploadModal = () => {
     if (window.activeUploadXHR) {
       window.activeUploadXHR.abort();
     }
@@ -203,7 +228,9 @@ document.addEventListener("DOMContentLoaded", () => {
       modal.classList.remove("flex");
     }
     if (fileInput) fileInput.value = "";
-  });
+  };
+  document.getElementById("cancel-upload-btn")?.addEventListener("click", dismissUploadModal);
+  document.getElementById("close-upload-modal")?.addEventListener("click", dismissUploadModal);
 
   // ========================================================
   // 2. HEADER BUTTONS & MODALS
@@ -221,10 +248,11 @@ document.addEventListener("DOMContentLoaded", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  // Projects Modal
-  document.getElementById("nav-projects-btn")?.addEventListener("click", () => {
-    openProjectsModal();
-  });
+  // Projects Modal (Desktop & Mobile)
+  const openProjHandler = () => openProjectsModal();
+  document.getElementById("nav-projects-btn")?.addEventListener("click", openProjHandler);
+  document.getElementById("mobile-nav-projects-btn")?.addEventListener("click", openProjHandler);
+
   document.getElementById("close-projects-modal")?.addEventListener("click", () => {
     document.getElementById("projects-modal")?.classList.add("hidden");
     document.getElementById("projects-modal")?.classList.remove("flex");
@@ -235,14 +263,17 @@ document.addEventListener("DOMContentLoaded", () => {
     fileInput?.click();
   });
 
-  // Pricing Modal
-  document.getElementById("nav-pricing-btn")?.addEventListener("click", () => {
+  // Pricing Modal (Desktop & Mobile)
+  const openPricingHandler = () => {
     const modal = document.getElementById("pricing-modal");
     if (modal) {
       modal.classList.remove("hidden");
       modal.classList.add("flex");
     }
-  });
+  };
+  document.getElementById("nav-pricing-btn")?.addEventListener("click", openPricingHandler);
+  document.getElementById("mobile-nav-pricing-btn")?.addEventListener("click", openPricingHandler);
+
   document.getElementById("close-pricing-modal")?.addEventListener("click", () => {
     document.getElementById("pricing-modal")?.classList.add("hidden");
     document.getElementById("pricing-modal")?.classList.remove("flex");
@@ -282,14 +313,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Help Modal
-  document.getElementById("nav-help-btn")?.addEventListener("click", () => {
+  // Help Modal (Desktop & Mobile)
+  const openHelpHandler = () => {
     const modal = document.getElementById("help-modal");
     if (modal) {
       modal.classList.remove("hidden");
       modal.classList.add("flex");
     }
-  });
+  };
+  document.getElementById("nav-help-btn")?.addEventListener("click", openHelpHandler);
+  document.getElementById("mobile-nav-help-btn")?.addEventListener("click", openHelpHandler);
+
   document.getElementById("close-help-modal")?.addEventListener("click", () => {
     document.getElementById("help-modal")?.classList.add("hidden");
     document.getElementById("help-modal")?.classList.remove("flex");
@@ -448,9 +482,27 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     listContainer.querySelectorAll(".open-proj-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        window.currentVideoId = btn.dataset.id;
-        timeline.showToast(`تم فتح المشروع بنجاح`);
+      btn.addEventListener("click", async () => {
+        const projId = btn.dataset.id;
+        window.currentVideoId = projId;
+        const targetUrl = (projId === "sample") ? "/static/assets/demo_video.mp4" : `/api/video/stream/${projId}`;
+        if (videoEl) {
+          videoEl.src = targetUrl;
+          videoEl.load();
+          videoEl.play().catch(() => {});
+        }
+        try {
+          const res = await fetch(`/api/video/info?video_id=${projId}`);
+          const data = await res.json();
+          if (data && data.info && data.info.duration) {
+            timeline.duration = data.info.duration;
+            timeline.setTime(0);
+            timeline.renderRuler();
+            timeline.drawAudioWaveform();
+            timeline.renderFilmstrip();
+          }
+        } catch {}
+        timeline.showToast(`تم فتح المشروع في المشغل بنجاح`);
         modal.classList.add("hidden");
         modal.classList.remove("flex");
       });
@@ -975,6 +1027,9 @@ document.addEventListener("DOMContentLoaded", () => {
           dlBtn.classList.remove("hidden");
         }
 
+        const doneBtn = document.getElementById("done-export-btn");
+        if (doneBtn) doneBtn.classList.remove("hidden");
+
         // Auto trigger download
         const a = document.createElement("a");
         a.href = data.url;
@@ -987,7 +1042,34 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (err) {
         clearInterval(progressTimer);
         if (statusText) statusText.innerText = `خطأ في التصدير: ${err.message}`;
+        const doneBtn = document.getElementById("done-export-btn");
+        if (doneBtn) doneBtn.classList.remove("hidden");
       }
     });
   }
+
+  // Close Export Modal Handlers
+  const dismissExportModal = () => {
+    const modal = document.getElementById("export-progress-modal");
+    if (modal) {
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+  };
+  document.getElementById("close-export-modal")?.addEventListener("click", dismissExportModal);
+  document.getElementById("done-export-btn")?.addEventListener("click", dismissExportModal);
+
+  // Outside click / Backdrop dismiss for all modals
+  document.querySelectorAll(".modal-overlay").forEach((modal) => {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        // Don't auto-dismiss during active upload
+        if (modal.id === "upload-progress-modal" && window.activeUploadXHR) {
+          return;
+        }
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+    });
+  });
 });

@@ -5,11 +5,13 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 
-# Install ffmpeg and system dependencies
+# Install ffmpeg and system dependencies including fonts for Arabic video text rendering
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     curl \
     ca-certificates \
+    fonts-hosny-amiri \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python requirements
