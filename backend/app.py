@@ -21,6 +21,7 @@ from video_engine import (
     add_audio_to_video,
     merge_video_clips,
     add_text_to_video,
+    burn_subtitles_into_video,
 )
 from ai_subtitles import generate_subtitles
 
@@ -265,6 +266,51 @@ async def auto_subtitles(
         target_language=language,
         gemini_api_key=gemini_key
     )
+    return result
+
+@app.post("/api/video/burn-subtitles")
+async def api_burn_subtitles(
+    video_id: str = Form("sample"),
+    cues_json: str = Form("[]"),
+    font_name: str = Form("Amiri"),
+    font_size: int = Form(42),
+    text_color: str = Form("#facc15"),
+    outline_color: str = Form("#000000"),
+    position: str = Form("bottom")
+):
+    """
+    Burn subtitles directly and permanently into the video frames.
+    """
+    import json
+    file_path = resolve_video_path(video_id)
+    try:
+        cues = json.loads(cues_json)
+    except Exception:
+        raise HTTPException(status_code=400, detail="تنسيق الترجمة (JSON) غير صالح")
+
+    if not cues or not isinstance(cues, list):
+        raise HTTPException(status_code=400, detail="يرجى توفير أسطر الترجمة لحرقها داخل الفيديو")
+
+    out_name = f"videopro_subtitled_{uuid.uuid4().hex[:6]}.mp4"
+    out_path = os.path.join(EXPORTS_DIR, out_name)
+
+    result = burn_subtitles_into_video(
+        video_path=file_path,
+        output_path=out_path,
+        cues=cues,
+        font_name=font_name,
+        font_size=font_size,
+        text_color=text_color,
+        outline_color=outline_color,
+        position=position
+    )
+
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+
+    result["url"] = f"/api/download/export/{out_name}"
+    result["filename"] = out_name
+    result["video_id"] = out_name
     return result
 
 @app.post("/api/video/export")

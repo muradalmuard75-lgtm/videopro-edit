@@ -838,49 +838,135 @@
   <div id="subtitles-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-3 sm:p-4">
     <div class="glass-panel w-full max-w-xl p-4 sm:p-6 modal-enter border border-blue-500/40 flex flex-col gap-3.5 max-h-[92vh] overflow-y-auto">
       <div class="flex items-center justify-between pb-2.5 border-b border-gray-800">
-        <h3 class="font-bold text-sm sm:text-base text-white">الترجمة التلقائية وتخصيص الخطوط</h3>
-        <button id="close-subtitles-modal" class="text-gray-400 hover:text-white">✕</button>
+        <div class="flex items-center gap-2">
+          <span class="text-xl">📝</span>
+          <h3 class="font-bold text-sm sm:text-base text-white">الترجمة التلقائية وحرق النصوص داخل الفيديو</h3>
+        </div>
+        <button id="close-subtitles-modal" class="text-gray-400 hover:text-white p-1 text-lg">✕</button>
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-        <div>
-          <label class="text-gray-400 block mb-1">اللغة:</label>
-          <select id="sub-lang-select" class="w-full bg-[#151c2c] border border-gray-700 rounded-lg p-1.5 text-gray-200">
-            <option value="ar" selected>العربية</option>
-            <option value="en">English</option>
-            <option value="fr">Français</option>
-            <option value="tr">Türkçe</option>
-            <option value="es">Español</option>
+      <!-- Mode Selector Tabs -->
+      <div class="flex bg-gray-950/80 p-1 rounded-xl border border-gray-800 text-xs">
+        <button id="sub-mode-browser-btn" type="button" class="flex-1 py-1.5 px-2 rounded-lg font-bold text-center transition bg-purple-600 text-white shadow">
+          🎙️ التعرف الصوتي بالمتصفح (مجاني فوراً)
+        </button>
+        <button id="sub-mode-gemini-btn" type="button" class="flex-1 py-1.5 px-2 rounded-lg font-bold text-center transition text-gray-400 hover:text-white">
+          ✨ الذكاء الاصطناعي (Gemini AI)
+        </button>
+      </div>
+
+      <!-- Browser Speech Recognition Panel -->
+      <div id="sub-panel-browser" class="flex flex-col gap-2.5 bg-gray-900/60 p-3 rounded-xl border border-purple-500/20 text-xs">
+        <div class="flex items-center justify-between text-gray-300">
+          <span class="font-medium">لغة الصوت المنطوق في الفيديو:</span>
+          <select id="sub-speech-lang-select" class="bg-[#151c2c] border border-gray-700 rounded-lg px-2.5 py-1 text-gray-200">
+            <option value="ar-SA" selected>العربية (Arabic - عام)</option>
+            <option value="ar-EG">العربية (مصر)</option>
+            <option value="ar-JO">العربية (بلاد الشام)</option>
+            <option value="en-US">الإنجليزية (English ➜ ترجمة للعربية)</option>
           </select>
         </div>
+        <div class="text-[11px] text-gray-400 leading-relaxed">
+          💡 يقوم المتصفح بتشغيل الفيديو والاستماع لصوت المتحدث بدقة وتحويله إلى نصوص متزامنة مع الثواني مجاناً 100%.
+        </div>
+        <div class="flex items-center gap-2 mt-1">
+          <button id="start-speech-rec-btn" type="button" class="flex-1 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md flex items-center justify-center gap-1.5">
+            <span id="speech-rec-icon">🎙️</span>
+            <span id="speech-rec-label">بدء الاستماع وتفريغ كلام الفيديو</span>
+          </button>
+          <button id="stop-speech-rec-btn" type="button" class="hidden px-3 py-2 rounded-xl bg-red-600/80 hover:bg-red-500 text-white font-bold text-xs">
+            ⏹️ إيقاف
+          </button>
+        </div>
+      </div>
+
+      <!-- Gemini AI Panel (Hidden by default) -->
+      <div id="sub-panel-gemini" class="hidden flex-col gap-2.5 bg-gray-900/60 p-3 rounded-xl border border-blue-500/20 text-xs">
         <div>
-          <label class="text-gray-400 block mb-1">الخط:</label>
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-gray-300 font-medium">مفتاح الذكاء الاصطناعي (Gemini API Key):</label>
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="text-[11px] text-blue-400 hover:underline">
+              احصل على مفتاح مجاني من Google ↗
+            </a>
+          </div>
+          <input type="password" id="gemini-api-key-input" placeholder="AIzaSy... (اختياري - مجاني من Google AI Studio)" class="w-full bg-[#151c2c] border border-gray-700 rounded-lg px-2.5 py-1.5 text-gray-200 text-xs focus:border-blue-500 focus:outline-none" />
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-gray-300">لغة الترجمة المطلوبة:</span>
+          <select id="sub-lang-select" class="bg-[#151c2c] border border-gray-700 rounded-lg px-2.5 py-1 text-gray-200">
+            <option value="ar" selected>العربية (Arabic)</option>
+            <option value="en">الإنجليزية (English)</option>
+            <option value="fr">الفرنسية (Français)</option>
+            <option value="tr">التركية (Türkçe)</option>
+          </select>
+        </div>
+        <button id="generate-subtitles-btn" type="button" class="w-full py-2 btn-primary text-xs shadow">
+          🚀 تفريغ وترجمة بالذكاء الاصطناعي
+        </button>
+      </div>
+
+      <!-- Subtitle Styling Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-gray-950/40 p-2.5 rounded-xl border border-gray-800">
+        <div>
+          <label class="text-gray-400 block mb-1">نوع الخط:</label>
           <select id="sub-font-select" class="w-full bg-[#151c2c] border border-gray-700 rounded-lg p-1.5 text-gray-200">
-            <option value="'Cairo', sans-serif" selected>Cairo</option>
-            <option value="'Tajawal', sans-serif">Tajawal</option>
+            <option value="Amiri" selected>Amiri (أميري أصيل)</option>
+            <option value="'Cairo', sans-serif">Cairo (كايرو)</option>
+            <option value="'Tajawal', sans-serif">Tajawal (تجوال)</option>
+            <option value="DejaVuSans">DejaVu Sans</option>
           </select>
         </div>
         <div>
-          <label class="text-gray-400 block mb-1">اللون:</label>
+          <label class="text-gray-400 block mb-1">مكان الظهور:</label>
+          <select id="sub-pos-select" class="w-full bg-[#151c2c] border border-gray-700 rounded-lg p-1.5 text-gray-200">
+            <option value="bottom" selected>أسفل الفيديو</option>
+            <option value="middle">وسط الفيديو</option>
+            <option value="top">أعلى الفيديو</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-gray-400 block mb-1">لون النص:</label>
           <input type="color" id="sub-color-picker" value="#facc15" class="w-full h-7 bg-transparent rounded cursor-pointer">
         </div>
         <div>
-          <label class="text-gray-400 block mb-1">الحجم:</label>
-          <input type="range" id="sub-size-range" min="14" max="32" value="18" class="w-full mt-1.5 accent-purple-500">
+          <label class="text-gray-400 block mb-1">حجم الخط (<span id="sub-size-val">36</span>px):</label>
+          <input type="range" id="sub-size-range" min="18" max="52" value="36" class="w-full mt-1.5 accent-purple-500">
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
-        <button id="generate-subtitles-btn" class="flex-1 py-2 btn-primary text-xs shadow">
-          توليد الترجمة بالذكاء الاصطناعي
+      <!-- Status Indicator -->
+      <div id="subtitles-status-text" class="text-xs text-center text-amber-300 font-semibold min-h-[16px]"></div>
+
+      <!-- Cues List Header & Add Manual Cue -->
+      <div class="flex items-center justify-between pt-1">
+        <span class="text-xs font-bold text-gray-300">سطور الترجمة والتوقيتات:</span>
+        <button id="add-manual-cue-btn" type="button" class="text-[11px] text-purple-400 hover:text-purple-300 font-bold px-2 py-0.5 rounded border border-purple-500/40 bg-purple-500/10">
+          ➕ إضافة سطر يدوي
         </button>
-        <a id="download-srt-btn" href="#" class="hidden px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-200 border border-gray-700" download="subtitles.srt">
-          SRT
-        </a>
       </div>
 
-      <div id="subtitles-status-text" class="text-xs text-center text-blue-300 font-semibold"></div>
-      <div id="subtitles-cues-list" class="max-h-40 overflow-y-auto flex flex-col gap-1.5 pr-1"></div>
+      <!-- Cues List -->
+      <div id="subtitles-cues-list" class="max-h-48 overflow-y-auto flex flex-col gap-1.5 pr-1 border border-gray-800/80 rounded-xl p-2 bg-black/30">
+        <div class="text-center text-gray-500 text-xs py-4">
+          لا توجد أسطر ترجمة حالياً. اضغط "بدء الاستماع" أو "تفريغ بالذكاء الاصطناعي" لتفريغ كلام الفيديو.
+        </div>
+      </div>
+
+      <!-- Action Buttons: Burn Subtitles & Download SRT -->
+      <div class="flex flex-col gap-2 pt-2 border-t border-gray-800">
+        <button id="burn-subtitles-btn" type="button" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-600 hover:opacity-95 text-white font-extrabold text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 transition transform active:scale-98">
+          <span>🎬</span>
+          <span>حرق وتثبيت الترجمة داخل الفيديو نهائياً</span>
+        </button>
+        <div class="flex items-center gap-2">
+          <button id="preview-subtitles-overlay-btn" type="button" class="flex-1 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 border border-gray-700">
+            👁️ معاينة على الشاشة فقط
+          </button>
+          <a id="download-srt-btn" href="#" class="hidden px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-200 border border-gray-700" download="subtitles.srt">
+            📥 تحميل SRT
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 

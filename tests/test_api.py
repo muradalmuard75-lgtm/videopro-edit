@@ -93,6 +93,25 @@ class TestVideoProSuite(unittest.TestCase):
         self.assertTrue(data.get("success"))
         self.assertIn("cues", data)
 
+    def test_burn_subtitles(self):
+        import json
+        cues = [
+            {"start_sec": 0.5, "end_sec": 2.5, "text": "تجربة حرق الترجمة داخل الفيديو"}
+        ]
+        res = client.post("/api/video/burn-subtitles", data={
+            "video_id": "sample",
+            "cues_json": json.dumps(cues),
+            "font_name": "Amiri",
+            "font_size": 36,
+            "text_color": "#facc15",
+            "position": "bottom"
+        })
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data.get("success"))
+        self.assertIn("url", data)
+        self.assertIn("filename", data)
+
     def test_export_video(self):
         res = client.post("/api/video/export", data={
             "video_id": "sample",

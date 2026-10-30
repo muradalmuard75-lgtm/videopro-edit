@@ -682,3 +682,73 @@ def add_text_to_video(
         "size_mb": out_info.get("size_mb", 0.0)
     }
 
+def burn_subtitles_into_video(
+    video_path: str,
+    output_path: str,
+    cues: List[Dict[str, Any]],
+    font_name: str = "Amiri",
+    font_size: int = 42,
+    text_color: str = "#facc15",
+    outline_color: str = "#000000",
+    position: str = "bottom"
+) -> Dict[str, Any]:
+    """
+    Burn / hardcode Arabic/multilingual subtitles permanently into the video frames.
+    Uses ASS formatting with libass for perfect RTL Arabic shaping, bold outline, and box.
+    """
+    if not os.path.exists(video_path):
+        return {"error": "Source video file not found"}
+
+    if not cues or len(cues) == 0:
+        return {"error": "No subtitle cues provided to burn"}
+
+    from ai_subtitles import build_ass
+    ass_content = build_ass(
+        cues=cues,
+        font_name=font_name,
+        font_size=font_size,
+        text_color=text_color,
+        outline_color=outline_color,
+        position=position
+    )
+
+    temp_ass = os.path.join(os.path.dirname(output_path), f"subs_{os.path.basename(output_path)}.ass")
+    with open(temp_ass, "w", encoding="utf-8") as f:
+        f.write(ass_content)
+
+    # Use ass filter in ffmpeg
+    escaped_ass = temp_ass.replace("\\", "/").replace(":", "\\:")
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", video_path,
+        "-vf", f"ass='{escaped_ass}'",
+        "-c:v", "libx264",
+        "-preset", "veryfast",
+        "-crf", "20",
+        "-c:a", "copy",
+        "-movflags", "+faststart",
+        output_path
+    ]
+
+    res = run_command(cmd)
+
+    # Cleanup temp ass
+    if os.path.exists(temp_ass):
+        try:
+            os.remove(temp_ass)
+        except Exception:
+            pass
+
+    if res.returncode != 0:
+        return {"error": f"Failed to burn subtitles into video: {res.stderr}"}
+
+    out_info = get_video_info(output_path)
+    return {
+        "success": True,
+        "output_path": output_path,
+        "cues_burned": len(cues),
+        "duration": out_info.get("duration", 0.0),
+        "size_mb": out_info.get("size_mb", 0.0)
+    }
+
+
