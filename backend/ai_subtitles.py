@@ -224,12 +224,22 @@ def transcribe_fallback_google(video_path: str, language: str = "ar-SA") -> List
         if not clean_txt:
             return []
 
+        # Determine audio duration to distribute cues smoothly
+        duration = 6.0
+        try:
+            import subprocess as sp
+            probe_cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", video_path]
+            dur_out = sp.check_output(probe_cmd, timeout=5).decode().strip()
+            duration = max(2.0, float(dur_out))
+        except Exception:
+            pass
+
         return [{
             "id": 1,
             "start_sec": 0.5,
-            "end_sec": 4.0,
+            "end_sec": round(duration, 2),
             "start": format_timecode(0.5),
-            "end": format_timecode(4.0),
+            "end": format_timecode(duration),
             "text": clean_txt
         }]
     except Exception as e:
@@ -361,17 +371,22 @@ def generate_subtitles(
                 **transcribe_kwargs
             )
             detected_lang = info.language
-            print(f"Whisper transcribed audio. Detected language: {detected_lang}")
+            detected_prob = getattr(info, "language_probability", 1.0)
+            print(f"Whisper transcribed audio. Detected language: {detected_lang} (prob: {detected_prob:.2f})")
 
-            # If user wanted Arabic, but Whisper detected Persian/Urdu/Hebrew, force Arabic decode
-            if target_language == "ar" and detected_lang in ("fa", "ur", "ps", "sd", "he"):
-                print(f"Detected {detected_lang} while target is Arabic; re-decoding with forced language='ar'...")
-                transcribe_kwargs["language"] = "ar"
-                segments, info = model.transcribe(
-                    audio_arr,
-                    **transcribe_kwargs
-                )
-                detected_lang = "ar"
+            # If user wanted Arabic, but Whisper detected foreign/dialectal phonemes (or low-prob English),
+            # force pure Arabic decoding with initial prompt so text is 100% Arabic without garbling
+            if target_language == "ar" and detected_lang != "ar":
+                is_confident_english = (detected_lang == "en" and detected_prob >= 0.60)
+                if not is_confident_english:
+                    print(f"Detected {detected_lang} (prob {detected_prob:.2f}) while target is Arabic; re-decoding with forced language='ar'...")
+                    transcribe_kwargs["language"] = "ar"
+                    transcribe_kwargs["initial_prompt"] = ARABIC_INITIAL_PROMPT
+                    segments, info = model.transcribe(
+                        audio_arr,
+                        **transcribe_kwargs
+                    )
+                    detected_lang = "ar"
 
             raw_segments = list(segments)
 
@@ -564,12 +579,13 @@ def build_ass(
     position: str = "bottom",
     style_preset: Optional[str] = None,
     pop_animation: bool = True,
-    chunk_for_reels: bool = False
+    chunk_for_reels: bool = False,
+    is_vertical: bool = False
 ) -> str:
     """
     Build ASS subtitle file with high-impact TikTok / Reels styling.
     Supports vibrant viral colors, bold outline strokes, translucent background boxes,
-    and pop-in entrance animation.
+    and pop-in entrance animation. Automatically adapts PlayRes and margins for vertical 9:16 videos.
     """
     if chunk_for_reels:
         cues = chunk_cues_for_reels(cues)
@@ -599,18 +615,26 @@ def build_ass(
         back_box = hex_to_ass(resolved_back, "80")
 
     alignment = 2
-    margin_v = 70
+    if is_vertical:
+        play_res_x = 1080
+        play_res_y = 1920
+        margin_v = 240 if position == "bottom" else (120 if position == "top" else 0)
+        resolved_size = int(resolved_size * 1.15) if resolved_size < 54 else resolved_size
+    else:
+        play_res_x = 1920
+        play_res_y = 1080
+        margin_v = 70 if position == "bottom" else (75 if position == "top" else 0)
+
     if position == "top":
         alignment = 8
-        margin_v = 75
     elif position == "middle":
         alignment = 5
         margin_v = 0
 
     header = f"""[Script Info]
 ScriptType: v4.00+
-PlayResX: 1920
-PlayResY: 1080
+PlayResX: {play_res_x}
+PlayResY: {play_res_y}
 ScaledBorderAndShadow: yes
 
 [V4+ Styles]

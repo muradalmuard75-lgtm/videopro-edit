@@ -717,6 +717,11 @@ def burn_subtitles_into_video(
 
     from ai_subtitles import build_ass, chunk_cues_for_reels
 
+    info = get_video_info(video_path)
+    width = int(info.get("width") or 0)
+    height = int(info.get("height") or 0)
+    is_vertical = (height > width) if (height and width) else False
+
     processed_cues = chunk_cues_for_reels(cues) if chunk_for_reels else cues
 
     ass_content = build_ass(
@@ -732,7 +737,8 @@ def burn_subtitles_into_video(
         position=position,
         style_preset=style_preset,
         pop_animation=pop_animation,
-        chunk_for_reels=False
+        chunk_for_reels=False,
+        is_vertical=is_vertical
     )
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -764,9 +770,6 @@ def burn_subtitles_into_video(
         else:
             ass_filter = f"ass='{escaped_ass}'"
 
-        info = get_video_info(video_path)
-        width = int(info.get("width") or 0)
-        height = int(info.get("height") or 0)
         has_audio = info.get("has_audio", True)
         audio_flags = ["-c:a", "copy"] if has_audio else ["-an"]
 
