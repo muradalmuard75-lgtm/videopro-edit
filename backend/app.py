@@ -252,19 +252,24 @@ async def get_highlights(
     return result
 
 @app.post("/api/video/subtitles")
-async def auto_subtitles(
+def auto_subtitles(
     video_id: str = Form("sample"),
     language: str = Form("ar"),
+    chunk_reels: bool = Form(True),
+    max_words: int = Form(4),
     gemini_key: Optional[str] = Form(None)
 ):
     """
     Speech-to-text automated subtitles with multi-language translation and timestamps.
+    Runs synchronously in threadpool to keep the event loop responsive.
     """
     file_path = resolve_video_path(video_id)
     result = generate_subtitles(
         video_path=file_path,
         target_language=language,
-        gemini_api_key=gemini_key
+        gemini_api_key=gemini_key,
+        chunk_for_reels=chunk_reels,
+        max_words_per_cue=max_words
     )
     return result
 
@@ -272,14 +277,21 @@ async def auto_subtitles(
 def api_burn_subtitles(
     video_id: str = Form("sample"),
     cues_json: str = Form("[]"),
-    font_name: str = Form("Amiri"),
-    font_size: int = Form(42),
+    font_name: str = Form("Cairo"),
+    font_size: int = Form(46),
     text_color: str = Form("#facc15"),
     outline_color: str = Form("#000000"),
-    position: str = Form("bottom")
+    outline_width: float = Form(3.5),
+    back_color: str = Form("&H80000000"),
+    border_style: int = Form(1),
+    shadow: float = Form(1.0),
+    position: str = Form("bottom"),
+    style_preset: Optional[str] = Form(None),
+    pop_animation: bool = Form(True),
+    chunk_for_reels: bool = Form(True)
 ):
     """
-    Burn subtitles directly and permanently into the video frames.
+    Burn subtitles directly and permanently into the video frames using viral ASS styling.
     """
     import json
     file_path = resolve_video_path(video_id)
@@ -302,7 +314,14 @@ def api_burn_subtitles(
         font_size=font_size,
         text_color=text_color,
         outline_color=outline_color,
-        position=position
+        outline_width=outline_width,
+        back_color=back_color,
+        border_style=border_style,
+        shadow=shadow,
+        position=position,
+        style_preset=style_preset,
+        pop_animation=pop_animation,
+        chunk_for_reels=chunk_for_reels
     )
 
     if "error" in result:
@@ -317,24 +336,34 @@ def api_burn_subtitles(
 def api_auto_caption_and_burn(
     video_id: str = Form("sample"),
     target_language: str = Form("ar"),
-    font_name: str = Form("Amiri"),
-    font_size: int = Form(40),
+    font_name: str = Form("Cairo"),
+    font_size: int = Form(46),
     text_color: str = Form("#facc15"),
     outline_color: str = Form("#000000"),
-    position: str = Form("bottom")
+    outline_width: float = Form(3.5),
+    back_color: str = Form("&H80000000"),
+    border_style: int = Form(1),
+    shadow: float = Form(1.0),
+    position: str = Form("bottom"),
+    style_preset: Optional[str] = Form("tiktok_yellow"),
+    pop_animation: bool = Form(True),
+    chunk_for_reels: bool = Form(True),
+    max_words: int = Form(4)
 ):
     """
-    All-in-one automated pipeline:
+    All-in-one automated pipeline for TikTok / Reels:
     1. Extracts audio track directly on the server.
     2. Transcribes spoken speech (Arabic or English) with precise timestamps.
     3. If English, automatically translates speech to natural Arabic.
-    4. Automatically burns/hardcodes Arabic text into video frames using Amiri font.
-    5. Returns the ready subtitled video URL.
+    4. Formats subtitles with ASS styling (Cairo/Amiri, bold stroke, box, pop animation).
+    5. Burns text permanently into video frames using ultrafast FFmpeg.
     """
     file_path = resolve_video_path(video_id)
     sub_res = generate_subtitles(
         video_path=file_path,
-        target_language=target_language
+        target_language=target_language,
+        chunk_for_reels=chunk_for_reels,
+        max_words_per_cue=max_words
     )
     if not sub_res.get("success") or not sub_res.get("cues"):
         err = sub_res.get("error", "لم يتم رصد كلام واضح في مقطع الصوت لاستخراجه")
@@ -352,7 +381,14 @@ def api_auto_caption_and_burn(
         font_size=font_size,
         text_color=text_color,
         outline_color=outline_color,
-        position=position
+        outline_width=outline_width,
+        back_color=back_color,
+        border_style=border_style,
+        shadow=shadow,
+        position=position,
+        style_preset=style_preset,
+        pop_animation=pop_animation,
+        chunk_for_reels=False
     )
 
     if "error" in burn_res:
@@ -367,7 +403,7 @@ def api_auto_caption_and_burn(
     return burn_res
 
 @app.post("/api/video/export")
-async def export_video(
+def export_video(
     video_id: str = Form("sample"),
     resolution: str = Form("1080p"),
     format_type: str = Form("mp4"),

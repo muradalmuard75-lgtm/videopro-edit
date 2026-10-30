@@ -127,6 +127,60 @@ class TestVideoProSuite(unittest.TestCase):
         self.assertIn("url", data)
         self.assertIn("cues", data)
 
+    def test_reels_chunking_and_ass_presets(self):
+        from ai_subtitles import chunk_cues_for_reels, build_ass
+        cues = [
+            {
+                "id": 1,
+                "start_sec": 0.0,
+                "end_sec": 4.0,
+                "text": "هذا اختبار تجريبي لتقطيع جمل التيك توك والريلز الطويلة باحترافية"
+            }
+        ]
+        chunked = chunk_cues_for_reels(cues, max_words_per_cue=3)
+        self.assertGreater(len(chunked), 1)
+        for c in chunked:
+            self.assertLessEqual(len(c["text"].split()), 3)
+            self.assertGreaterEqual(c["end_sec"], c["start_sec"])
+
+        # Test build_ass with tiktok_yellow
+        ass_yellow = build_ass(chunked, style_preset="tiktok_yellow", font_name="Cairo")
+        self.assertIn("[Script Info]", ass_yellow)
+        self.assertIn("VideoProReels", ass_yellow)
+        self.assertIn("Cairo", ass_yellow)
+        self.assertIn("&H0015ccfa", ass_yellow)
+
+        # Test build_ass with tiktok_box (BorderStyle=3)
+        ass_box = build_ass(chunked, style_preset="tiktok_box", font_name="Cairo")
+        self.assertIn(",3,", ass_box) # BorderStyle=3
+        self.assertIn("&H00ffffff", ass_box)
+
+    def test_burn_subtitles_with_tiktok_reels_styling(self):
+        import json
+        cues = [
+            {"start_sec": 0.2, "end_sec": 1.8, "text": "ريلز احترافي وسريع"},
+            {"start_sec": 1.9, "end_sec": 3.2, "text": "مع خط كايرو العريض"}
+        ]
+        res = client.post("/api/video/burn-subtitles", data={
+            "video_id": "sample",
+            "cues_json": json.dumps(cues),
+            "font_name": "Cairo",
+            "font_size": 48,
+            "text_color": "#facc15",
+            "outline_color": "#000000",
+            "outline_width": 3.5,
+            "border_style": 1,
+            "position": "bottom",
+            "style_preset": "tiktok_yellow",
+            "pop_animation": "true",
+            "chunk_for_reels": "false"
+        })
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data.get("success"))
+        self.assertEqual(data.get("cues_burned"), 2)
+        self.assertIn("url", data)
+
     def test_export_video(self):
         res = client.post("/api/video/export", data={
             "video_id": "sample",

@@ -1,9 +1,10 @@
 /**
- * VideoPro Edit - Automated Server-Side Audio Captioning & Subtitle Engine
+ * VideoPro Edit - TikTok & Reels Automated Subtitles & Burning Engine (ASS & FFmpeg)
  * 1. Automatically extracts audio track from video on the server.
  * 2. Transcribes speech (Arabic/English) with precise timestamps.
- * 3. Translates foreign speech to Arabic.
- * 4. Burns/hardcodes Arabic subtitles permanently into the MP4 frames.
+ * 3. Translates foreign speech to natural Arabic.
+ * 4. Chunks lines into punchy 2-4 word Reels phrases.
+ * 5. Burns/hardcodes subtitles using ASS format with vibrant viral styling and pop-in animation.
  */
 class SubtitlesManager {
   constructor() {
@@ -12,10 +13,14 @@ class SubtitlesManager {
     this.cues = [];
     this.activeCueIndex = -1;
     this.styling = {
-      fontFamily: "Amiri",
-      fontSize: 38,
+      preset: "tiktok_yellow",
+      fontFamily: "Cairo",
+      fontSize: 46,
       textColor: "#facc15",
+      borderStyle: 1, // 1 = Stroke outline, 3 = Bounding box
       position: "bottom",
+      chunkForReels: true,
+      popAnimation: true,
     };
 
     this.init();
@@ -40,13 +45,19 @@ class SubtitlesManager {
       extractCuesBtn.addEventListener("click", () => this.extractCuesOnly());
     }
 
-    // 3. Add Manual Cue
+    // 3. Burn Edited Cues (after manual editing)
+    const burnEditedBtn = document.getElementById("burn-edited-cues-btn");
+    if (burnEditedBtn) {
+      burnEditedBtn.addEventListener("click", () => this.burnEditedCues());
+    }
+
+    // 4. Add Manual Cue
     const addCueBtn = document.getElementById("add-manual-cue-btn");
     if (addCueBtn) {
       addCueBtn.addEventListener("click", () => this.addManualCue());
     }
 
-    // 4. Preview Overlay on Screen
+    // 5. Preview Overlay on Screen
     const previewBtn = document.getElementById("preview-subtitles-overlay-btn");
     if (previewBtn) {
       previewBtn.addEventListener("click", () => {
@@ -57,12 +68,25 @@ class SubtitlesManager {
           video.play().catch(() => {});
         }
         if (window.timelineInstance) {
-          window.timelineInstance.showToast("👁️ يتم الآن تشغيل الفيديو مع عرض الترجمة على الشاشة");
+          window.timelineInstance.showToast("👁️ يتم الآن تشغيل الفيديو مع معاينة الترجمة بنمط الريلز على الشاشة");
         }
       });
     }
 
-    // Styling listeners
+    // Preset buttons
+    const presetButtons = document.querySelectorAll(".sub-preset-btn");
+    presetButtons.forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const targetBtn = e.currentTarget;
+        presetButtons.forEach((b) => b.classList.remove("active", "border-yellow-400/60", "bg-yellow-400/10"));
+        targetBtn.classList.add("active", "border-yellow-400/60", "bg-yellow-400/10");
+
+        const presetKey = targetBtn.getAttribute("data-preset") || "tiktok_yellow";
+        this.applyPreset(presetKey);
+      });
+    });
+
+    // Font select
     const fontSelect = document.getElementById("sub-font-select");
     if (fontSelect) {
       fontSelect.addEventListener("change", (e) => {
@@ -71,6 +95,7 @@ class SubtitlesManager {
       });
     }
 
+    // Position select
     const posSelect = document.getElementById("sub-pos-select");
     if (posSelect) {
       posSelect.addEventListener("change", (e) => {
@@ -79,6 +104,16 @@ class SubtitlesManager {
       });
     }
 
+    // Border style select
+    const borderSelect = document.getElementById("sub-border-style-select");
+    if (borderSelect) {
+      borderSelect.addEventListener("change", (e) => {
+        this.styling.borderStyle = parseInt(e.target.value, 10) || 1;
+        this.applySubtitleStyling();
+      });
+    }
+
+    // Color picker
     const colorPicker = document.getElementById("sub-color-picker");
     if (colorPicker) {
       colorPicker.addEventListener("input", (e) => {
@@ -87,13 +122,30 @@ class SubtitlesManager {
       });
     }
 
+    // Size range
     const sizeRange = document.getElementById("sub-size-range");
     const sizeVal = document.getElementById("sub-size-val");
     if (sizeRange) {
       sizeRange.addEventListener("input", (e) => {
-        this.styling.fontSize = parseInt(e.target.value, 10) || 38;
+        this.styling.fontSize = parseInt(e.target.value, 10) || 46;
         if (sizeVal) sizeVal.innerText = this.styling.fontSize;
         this.applySubtitleStyling();
+      });
+    }
+
+    // Reels chunk toggle
+    const chunkToggle = document.getElementById("sub-chunk-reels-toggle");
+    if (chunkToggle) {
+      chunkToggle.addEventListener("change", (e) => {
+        this.styling.chunkForReels = e.target.checked;
+      });
+    }
+
+    // Pop animation toggle
+    const popToggle = document.getElementById("sub-pop-anim-toggle");
+    if (popToggle) {
+      popToggle.addEventListener("change", (e) => {
+        this.styling.popAnimation = e.target.checked;
       });
     }
 
@@ -105,7 +157,57 @@ class SubtitlesManager {
       });
     }
 
+    this.applySubtitleStyling();
     window.subtitlesInstance = this;
+  }
+
+  applyPreset(presetKey) {
+    this.styling.preset = presetKey;
+    const fontSelect = document.getElementById("sub-font-select");
+    const colorPicker = document.getElementById("sub-color-picker");
+    const borderSelect = document.getElementById("sub-border-style-select");
+    const sizeRange = document.getElementById("sub-size-range");
+    const sizeVal = document.getElementById("sub-size-val");
+
+    if (presetKey === "tiktok_yellow") {
+      this.styling.fontFamily = "Cairo";
+      this.styling.textColor = "#facc15";
+      this.styling.borderStyle = 1;
+      this.styling.fontSize = 48;
+    } else if (presetKey === "tiktok_box") {
+      this.styling.fontFamily = "Cairo";
+      this.styling.textColor = "#ffffff";
+      this.styling.borderStyle = 3;
+      this.styling.fontSize = 44;
+    } else if (presetKey === "tiktok_green") {
+      this.styling.fontFamily = "Cairo";
+      this.styling.textColor = "#22c55e";
+      this.styling.borderStyle = 1;
+      this.styling.fontSize = 48;
+    } else if (presetKey === "tiktok_cyan") {
+      this.styling.fontFamily = "Cairo";
+      this.styling.textColor = "#06b6d4";
+      this.styling.borderStyle = 1;
+      this.styling.fontSize = 48;
+    } else if (presetKey === "tiktok_fire") {
+      this.styling.fontFamily = "Cairo";
+      this.styling.textColor = "#ff781f";
+      this.styling.borderStyle = 1;
+      this.styling.fontSize = 48;
+    } else if (presetKey === "classic_white") {
+      this.styling.fontFamily = "Amiri";
+      this.styling.textColor = "#ffffff";
+      this.styling.borderStyle = 1;
+      this.styling.fontSize = 44;
+    }
+
+    if (fontSelect) fontSelect.value = this.styling.fontFamily;
+    if (colorPicker) colorPicker.value = this.styling.textColor;
+    if (borderSelect) borderSelect.value = String(this.styling.borderStyle);
+    if (sizeRange) sizeRange.value = this.styling.fontSize;
+    if (sizeVal) sizeVal.innerText = this.styling.fontSize;
+
+    this.applySubtitleStyling();
   }
 
   openModal() {
@@ -130,20 +232,51 @@ class SubtitlesManager {
 
   applySubtitleStyling() {
     if (!this.subtitlesOverlay) return;
-    this.subtitlesOverlay.style.fontFamily = this.styling.fontFamily.includes("Amiri") ? "'Amiri', serif" : this.styling.fontFamily;
-    this.subtitlesOverlay.style.fontSize = `${Math.round(this.styling.fontSize * 0.75)}px`;
+
+    const font = this.styling.fontFamily.includes("Amiri")
+      ? "'Amiri', serif"
+      : this.styling.fontFamily.includes("Cairo")
+      ? "'Cairo', sans-serif"
+      : this.styling.fontFamily;
+
+    this.subtitlesOverlay.style.fontFamily = font;
+    this.subtitlesOverlay.style.fontSize = `${Math.round(this.styling.fontSize * 0.72)}px`;
+    this.subtitlesOverlay.style.fontWeight = "800";
     this.subtitlesOverlay.style.color = this.styling.textColor;
-    this.subtitlesOverlay.style.textShadow = "0 2px 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.8)";
+    this.subtitlesOverlay.style.textAlign = "center";
+    this.subtitlesOverlay.style.letterSpacing = "0.5px";
+
+    if (this.styling.borderStyle === 3) {
+      // TikTok Bounding Box style
+      this.subtitlesOverlay.style.backgroundColor = "rgba(0, 0, 0, 0.78)";
+      this.subtitlesOverlay.style.padding = "4px 14px";
+      this.subtitlesOverlay.style.borderRadius = "8px";
+      this.subtitlesOverlay.style.textShadow = "none";
+      this.subtitlesOverlay.style.display = "inline-flex";
+      this.subtitlesOverlay.style.maxWidth = "85%";
+    } else {
+      // Bold Stroke Outline style
+      this.subtitlesOverlay.style.backgroundColor = "transparent";
+      this.subtitlesOverlay.style.padding = "0px";
+      this.subtitlesOverlay.style.borderRadius = "0px";
+      this.subtitlesOverlay.style.textShadow = `
+        -2px -2px 0 #000,
+         2px -2px 0 #000,
+        -2px  2px 0 #000,
+         2px  2px 0 #000,
+         0px  3px 6px rgba(0,0,0,0.9)
+      `;
+    }
 
     if (this.styling.position === "top") {
       this.subtitlesOverlay.style.top = "10%";
       this.subtitlesOverlay.style.bottom = "auto";
     } else if (this.styling.position === "middle") {
-      this.subtitlesOverlay.style.top = "45%";
+      this.subtitlesOverlay.style.top = "46%";
       this.subtitlesOverlay.style.bottom = "auto";
     } else {
       this.subtitlesOverlay.style.top = "auto";
-      this.subtitlesOverlay.style.bottom = "12%";
+      this.subtitlesOverlay.style.bottom = "14%";
     }
   }
 
@@ -163,10 +296,7 @@ class SubtitlesManager {
   }
 
   /**
-   * Automated All-in-One:
-   * 1. Extracts audio track directly on server.
-   * 2. Reads & translates speech into Arabic.
-   * 3. Burns Arabic captions directly into the MP4 frames.
+   * One-Click Auto-Caption & Burn (TikTok/Reels ASS style)
    */
   async autoCaptionAndBurn() {
     if (!window.currentVideoId) {
@@ -175,16 +305,20 @@ class SubtitlesManager {
     }
 
     const vidId = window.currentVideoId;
-    const fontName = this.styling.fontFamily || "Amiri";
-    const fontSize = this.styling.fontSize || 38;
+    const fontName = this.styling.fontFamily || "Cairo";
+    const fontSize = this.styling.fontSize || 46;
     const textColor = this.styling.textColor || "#facc15";
     const position = this.styling.position || "bottom";
+    const borderStyle = this.styling.borderStyle || 1;
+    const preset = this.styling.preset || "tiktok_yellow";
+    const chunkForReels = this.styling.chunkForReels !== false;
+    const popAnim = this.styling.popAnimation !== false;
 
     if (window.tasksManager) {
       window.tasksManager.runBackgroundTask({
         type: "autocaption",
-        title: "سحب الصوت وترجمته وكتابته داخل الفيديو 🎬",
-        icon: "🎙️",
+        title: "حرق نصوص الريلز والتيك توك (ASS)",
+        icon: "✨",
         dismissModalId: "subtitles-modal",
         apiCall: async () => {
           const formData = new FormData();
@@ -193,10 +327,15 @@ class SubtitlesManager {
           formData.append("font_name", fontName);
           formData.append("font_size", fontSize);
           formData.append("text_color", textColor);
+          formData.append("outline_color", "#000000");
           formData.append("position", position);
+          formData.append("border_style", borderStyle);
+          formData.append("style_preset", preset);
+          formData.append("chunk_for_reels", chunkForReels ? "true" : "false");
+          formData.append("pop_animation", popAnim ? "true" : "false");
 
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s max timeout
+          const timeoutId = setTimeout(() => controller.abort(), 180000); // Generous 180s timeout
 
           try {
             const resp = await fetch("/api/video/auto-caption-and-burn", {
@@ -213,29 +352,106 @@ class SubtitlesManager {
           } catch (err) {
             clearTimeout(timeoutId);
             if (err.name === "AbortError") {
-              throw new Error("استغرقت المعالجة وقتاً أطول من المتوقع، يرجى المحاولة مرة أخرى");
+              throw new Error("استغرقت المعالجة وقتاً طويلاً على السيرفر المجاني. يُرجى تجربة زر 'استخراج النصوص فقط' أولاً ثم الحرق لتوزيع الحمل.");
             }
             throw err;
           }
         },
         onSuccess: (data) => {
-          // Load new subtitled video into player
           if (window.playerInstance && data.url) {
             window.playerInstance.loadVideo(data.url, data.video_id);
           }
-          // Update cues and timeline track
           this.cues = data.cues || [];
           this.renderCuesList();
           this.updateTimelineSubtitleBlocks();
 
-          // Hide text overlay since subtitles are now permanently burned inside the video
           if (this.subtitlesOverlay) {
             this.subtitlesOverlay.classList.add("hidden");
             this.subtitlesOverlay.innerText = "";
           }
 
           if (window.timelineInstance) {
-            window.timelineInstance.showToast("🎉 تم سحب الصوت وكتابة الترجمة داخل الفيديو بنجاح!");
+            window.timelineInstance.showToast("🎉 تم حرق نصوص الريلز داخل الفيديو بنجاح عبر FFmpeg!");
+          }
+        },
+      });
+    }
+  }
+
+  /**
+   * Burn manually edited cues
+   */
+  async burnEditedCues() {
+    if (!window.currentVideoId) return;
+    if (!this.cues || this.cues.length === 0) {
+      if (window.timelineInstance) {
+        window.timelineInstance.showToast("⚠️ لا توجد أسطر نصوص لحرقها، قم باستخراج النصوص أولاً");
+      }
+      return;
+    }
+
+    const vidId = window.currentVideoId;
+    const fontName = this.styling.fontFamily || "Cairo";
+    const fontSize = this.styling.fontSize || 46;
+    const textColor = this.styling.textColor || "#facc15";
+    const position = this.styling.position || "bottom";
+    const borderStyle = this.styling.borderStyle || 1;
+    const preset = this.styling.preset || "tiktok_yellow";
+    const popAnim = this.styling.popAnimation !== false;
+
+    if (window.tasksManager) {
+      window.tasksManager.runBackgroundTask({
+        type: "burn_subtitles",
+        title: "حرق النصوص المعدلة (نمط الريلز)",
+        icon: "🎬",
+        dismissModalId: "subtitles-modal",
+        apiCall: async () => {
+          const formData = new FormData();
+          formData.append("video_id", vidId);
+          formData.append("cues_json", JSON.stringify(this.cues));
+          formData.append("font_name", fontName);
+          formData.append("font_size", fontSize);
+          formData.append("text_color", textColor);
+          formData.append("outline_color", "#000000");
+          formData.append("position", position);
+          formData.append("border_style", borderStyle);
+          formData.append("style_preset", preset);
+          formData.append("pop_animation", popAnim ? "true" : "false");
+          formData.append("chunk_for_reels", "false"); // already in user-edited state
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 180000);
+
+          try {
+            const resp = await fetch("/api/video/burn-subtitles", {
+              method: "POST",
+              body: formData,
+              signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+            const data = await resp.json();
+            if (!resp.ok || data.error) {
+              throw new Error(data.detail || data.error || "فشل حرق النصوص داخل الفيديو");
+            }
+            return data;
+          } catch (err) {
+            clearTimeout(timeoutId);
+            if (err.name === "AbortError") {
+              throw new Error("استغرقت المعالجة وقتاً أطول من المتوقع، يرجى المحاولة مرة أخرى");
+            }
+            throw err;
+          }
+        },
+        onSuccess: (data) => {
+          if (window.playerInstance && data.url) {
+            window.playerInstance.loadVideo(data.url, data.video_id);
+          }
+          if (this.subtitlesOverlay) {
+            this.subtitlesOverlay.classList.add("hidden");
+            this.subtitlesOverlay.innerText = "";
+          }
+          if (window.timelineInstance) {
+            window.timelineInstance.showToast("🎉 تم حرق النصوص المعدلة بنجاح داخل الفيديو!");
           }
         },
       });
@@ -250,12 +466,14 @@ class SubtitlesManager {
     const vidId = window.currentVideoId;
     const statusText = document.getElementById("subtitles-status-text");
 
-    if (statusText) statusText.innerText = "⏳ جاري سحب مقطع الصوت واستخراج نصوص الكلام...";
+    if (statusText) statusText.innerText = "⏳ جاري سحب مقطع الصوت واستخراج نصوص الكلام بسرعة...";
 
     try {
       const formData = new FormData();
       formData.append("video_id", vidId);
       formData.append("language", "ar");
+      formData.append("chunk_reels", this.styling.chunkForReels !== false ? "true" : "false");
+      formData.append("max_words", "4");
 
       const resp = await fetch("/api/video/subtitles", {
         method: "POST",
@@ -269,7 +487,9 @@ class SubtitlesManager {
       this.cues = data.cues || [];
       this.renderCuesList();
       this.updateTimelineSubtitleBlocks();
-      if (statusText) statusText.innerText = `✅ تم استخراج ${this.cues.length} سطر كلام بنجاح! اضغط الزر الرئيسي بالأعلى لحرقها داخل الفيديو.`;
+      if (statusText) {
+        statusText.innerText = `✅ تم استخراج ${this.cues.length} سطر كلام بنمط الريلز! اضغط "حرق النصوص المعدلة" أو الزر التلقائي لحرقها.`;
+      }
     } catch (err) {
       if (statusText) statusText.innerText = `⚠️ ${err.message}`;
     }
@@ -277,9 +497,9 @@ class SubtitlesManager {
 
   addManualCue() {
     const video = document.getElementById("main-video");
-    const currentSec = (video && video.currentTime > 0) ? video.currentTime : 0.0;
+    const currentSec = video && video.currentTime > 0 ? video.currentTime : 0.0;
     const startSec = parseFloat(currentSec.toFixed(2));
-    const endSec = parseFloat((currentSec + 3.0).toFixed(2));
+    const endSec = parseFloat((currentSec + 2.5).toFixed(2));
 
     this.cues.push({
       id: this.cues.length + 1,
@@ -287,7 +507,7 @@ class SubtitlesManager {
       end_sec: endSec,
       start: this.formatTimecode(startSec),
       end: this.formatTimecode(endSec),
-      text: "اكتب النص هنا...",
+      text: "نص الريلز هنا...",
     });
 
     this.renderCuesList();
@@ -309,7 +529,7 @@ class SubtitlesManager {
     if (this.cues.length === 0) {
       cuesList.innerHTML = `
         <div class="text-center text-gray-500 text-xs py-3">
-          اضغط الزر الرئيسي بالأعلى ليقوم السيرفر بسحب الصوت وترجمته وحرقه بالفيديو مباشرة!
+          اضغط زر استخراج النصوص أو التوليد التلقائي بالأعلى لقراءة الصوت وحرق الترجمة!
         </div>
       `;
       return;
@@ -321,17 +541,18 @@ class SubtitlesManager {
       item.className = "p-2 rounded-lg bg-gray-900 border border-gray-800 text-xs flex flex-col gap-1 transition hover:border-purple-500/50";
       item.innerHTML = `
         <div class="flex items-center justify-between text-gray-400 font-mono text-[11px]">
-          <span class="text-purple-400 font-bold">#${idx + 1}</span>
+          <span class="text-yellow-400 font-bold">#${idx + 1}</span>
           <div class="flex items-center gap-2">
             <span>${cue.start} ➜ ${cue.end}</span>
             <button type="button" class="text-red-400 hover:text-red-300 text-sm px-1" title="حذف" onclick="window.subtitlesInstance.removeCue(${idx})">🗑️</button>
           </div>
         </div>
-        <input type="text" value="${cue.text.replace(/"/g, '&quot;')}" class="w-full bg-black/60 border border-gray-700/80 rounded px-2.5 py-1 text-gray-100 font-medium text-xs focus:border-purple-500 focus:outline-none" oninput="window.updateCueText(${idx}, this.value)" />
+        <input type="text" value="${cue.text.replace(/"/g, "&quot;")}" class="w-full bg-black/60 border border-gray-700/80 rounded px-2.5 py-1 text-gray-100 font-bold text-xs focus:border-yellow-400 focus:outline-none" oninput="window.updateCueText(${idx}, this.value)" />
       `;
       cuesList.appendChild(item);
     });
 
+    // Download SRT
     const dlSrt = document.getElementById("download-srt-btn");
     if (dlSrt) {
       const srtText = this.buildSrtClient(this.cues);
@@ -339,16 +560,56 @@ class SubtitlesManager {
       dlSrt.href = URL.createObjectURL(blob);
       dlSrt.classList.remove("hidden");
     }
+
+    // Download ASS
+    const dlAss = document.getElementById("download-ass-btn");
+    if (dlAss) {
+      const assText = this.buildAssClient(this.cues);
+      const blobAss = new Blob([assText], { type: "text/plain;charset=utf-8" });
+      dlAss.href = URL.createObjectURL(blobAss);
+      dlAss.classList.remove("hidden");
+    }
   }
 
   buildSrtClient(cues) {
     const lines = [];
     cues.forEach((cue, i) => {
-      const start = cue.start.replace(".", ",");
-      const end = cue.end.replace(".", ",");
+      const start = (cue.start || "00:00:00.000").replace(".", ",");
+      const end = (cue.end || "00:00:02.000").replace(".", ",");
       lines.push(`${i + 1}\n${start} --> ${end}\n${cue.text}\n`);
     });
     return lines.join("\n");
+  }
+
+  buildAssClient(cues) {
+    const font = this.styling.fontFamily || "Cairo";
+    const size = this.styling.fontSize || 46;
+    const border = this.styling.borderStyle || 1;
+    const header = `[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: VideoProReels,${font},${size},&H0015ccfa,&H00000000,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,${border},3.5,1,2,40,40,70,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+`;
+    const events = [];
+    cues.forEach((cue) => {
+      const s = cue.start_sec || 0;
+      const e = cue.end_sec || s + 2;
+      const fmt = (sec) => {
+        const h = Math.floor(sec / 3600);
+        const m = Math.floor((sec % 3600) / 60);
+        const sc = Math.floor(sec % 60);
+        const cs = Math.round((sec - Math.floor(sec)) * 100);
+        return `${h}:${String(m).padStart(2, "0")}:${String(sc).padStart(2, "0")}.${String(cs).padStart(2, "0")}`;
+      events.push(`Dialogue: 0,${fmt(s)},${fmt(e)},VideoProReels,,0,0,0,,${cue.text}`);
+    });
+    return header + events.join("\n") + "\n";
   }
 
   formatTimecode(sec) {
@@ -365,11 +626,11 @@ class SubtitlesManager {
     track.innerHTML = "";
 
     const video = document.getElementById("main-video");
-    const totalDuration = (video && video.duration > 0) ? video.duration : (window.timelineInstance?.duration || 60);
+    const totalDuration = video && video.duration > 0 ? video.duration : window.timelineInstance?.duration || 60;
 
     this.cues.forEach((cue) => {
       const leftPct = (cue.start_sec / totalDuration) * 100;
-      const widthPct = Math.max(4, ((cue.end_sec - cue.start_sec) / totalDuration) * 100);
+      const widthPct = Math.max(3, ((cue.end_sec - cue.start_sec) / totalDuration) * 100);
 
       const block = document.createElement("div");
       block.className = "subtitle-block";
@@ -386,7 +647,7 @@ class SubtitlesManager {
 }
 
 window.SubtitlesManager = SubtitlesManager;
-window.updateCueText = function(idx, text) {
+window.updateCueText = function (idx, text) {
   if (window.subtitlesInstance && window.subtitlesInstance.cues[idx]) {
     window.subtitlesInstance.cues[idx].text = text;
   }

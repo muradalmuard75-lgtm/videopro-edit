@@ -686,15 +686,23 @@ def burn_subtitles_into_video(
     video_path: str,
     output_path: str,
     cues: List[Dict[str, Any]],
-    font_name: str = "Amiri",
-    font_size: int = 42,
+    font_name: str = "Cairo",
+    font_size: int = 46,
     text_color: str = "#facc15",
     outline_color: str = "#000000",
-    position: str = "bottom"
+    outline_width: float = 3.5,
+    back_color: str = "&H80000000",
+    border_style: int = 1,
+    shadow: float = 1.0,
+    position: str = "bottom",
+    style_preset: Optional[str] = None,
+    pop_animation: bool = True,
+    chunk_for_reels: bool = True
 ) -> Dict[str, Any]:
     """
     Burn / hardcode Arabic/multilingual subtitles permanently into the video frames.
-    Uses ASS formatting with libass for perfect RTL Arabic shaping, bold outline, and box.
+    Uses ASS formatting with libass for perfect RTL Arabic shaping, bold viral outline,
+    bounding box styling, and ultrafast FFmpeg encoding.
     """
     if not os.path.exists(video_path):
         return {"error": "Source video file not found"}
@@ -702,32 +710,60 @@ def burn_subtitles_into_video(
     if not cues or len(cues) == 0:
         return {"error": "No subtitle cues provided to burn"}
 
-    from ai_subtitles import build_ass
+    import sys
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
+    if backend_dir not in sys.path:
+        sys.path.insert(0, backend_dir)
+
+    from ai_subtitles import build_ass, chunk_cues_for_reels
+
+    processed_cues = chunk_cues_for_reels(cues) if chunk_for_reels else cues
+
     ass_content = build_ass(
-        cues=cues,
+        cues=processed_cues,
         font_name=font_name,
         font_size=font_size,
         text_color=text_color,
         outline_color=outline_color,
-        position=position
+        outline_width=outline_width,
+        back_color=back_color,
+        border_style=border_style,
+        shadow=shadow,
+        position=position,
+        style_preset=style_preset,
+        pop_animation=pop_animation,
+        chunk_for_reels=False
     )
 
     temp_ass = os.path.join(os.path.dirname(output_path), f"subs_{os.path.basename(output_path)}.ass")
     with open(temp_ass, "w", encoding="utf-8") as f:
         f.write(ass_content)
 
-    # Use ass filter in ffmpeg with ultrafast preset and fixed thread count for maximum speed
+    # Use ass filter in ffmpeg with ultrafast preset and fixed thread count for maximum cloud speed
     escaped_ass = temp_ass.replace("\\", "/").replace(":", "\\:")
+    fonts_dir = os.path.join(backend_dir, "fonts")
+
+    if os.path.isdir(fonts_dir):
+        escaped_fonts = fonts_dir.replace("\\", "/").replace(":", "\\:")
+        ass_filter = f"ass=filename='{escaped_ass}':fontsdir='{escaped_fonts}'"
+    else:
+        ass_filter = f"ass='{escaped_ass}'"
+
+    info = get_video_info(video_path)
+    has_audio = info.get("has_audio", True)
+    audio_flags = ["-c:a", "copy"] if has_audio else ["-an"]
+
     cmd = [
         "ffmpeg", "-y",
         "-threads", "2",
         "-i", video_path,
-        "-vf", f"ass='{escaped_ass}'",
+        "-vf", ass_filter,
         "-c:v", "libx264",
         "-preset", "ultrafast",
         "-tune", "fastdecode",
         "-crf", "23",
-        "-c:a", "copy",
+        *audio_flags,
+        "-sn",
         "-movflags", "+faststart",
         output_path
     ]
@@ -748,7 +784,7 @@ def burn_subtitles_into_video(
     return {
         "success": True,
         "output_path": output_path,
-        "cues_burned": len(cues),
+        "cues_burned": len(processed_cues),
         "duration": out_info.get("duration", 0.0),
         "size_mb": out_info.get("size_mb", 0.0)
     }

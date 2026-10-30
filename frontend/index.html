@@ -834,90 +834,151 @@
     </div>
   </div>
 
-  <!-- 5. SUBTITLES & AUTO-CAPTION MODAL -->
+  <!-- 5. SUBTITLES & AUTO-CAPTION MODAL (TikTok & Reels ASS Subtitles) -->
   <div id="subtitles-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-3 sm:p-4">
-    <div class="glass-panel w-full max-w-lg p-4 sm:p-6 modal-enter border border-purple-500/40 flex flex-col gap-3.5 max-h-[92vh] overflow-y-auto shadow-2xl">
-      <div class="flex items-center justify-between pb-2.5 border-b border-gray-800">
+    <div class="glass-panel w-full max-w-xl p-4 sm:p-6 modal-enter border border-purple-500/40 flex flex-col gap-3 max-h-[92vh] overflow-y-auto shadow-2xl">
+      <div class="flex items-center justify-between pb-2 border-b border-gray-800">
         <div class="flex items-center gap-2">
-          <span class="text-xl">🎙️</span>
-          <h3 class="font-bold text-sm sm:text-base text-white">سحب الصوت وترجمته وكتابته على الفيديو تلقائياً</h3>
+          <span class="text-xl">✨</span>
+          <h3 class="font-bold text-sm sm:text-base text-white">ترجمة وحرق نصوص التيك توك والريلز (ASS & FFmpeg)</h3>
         </div>
         <button id="close-subtitles-modal" class="text-gray-400 hover:text-white p-1 text-lg">✕</button>
       </div>
 
       <!-- Feature Explanation Box -->
-      <div class="bg-gradient-to-r from-purple-900/30 to-indigo-900/20 border border-purple-500/30 p-3 rounded-xl text-xs text-gray-300 flex flex-col gap-1.5 leading-relaxed">
-        <div class="flex items-center gap-1.5 text-purple-300 font-bold">
-          <span>⚡</span>
-          <span>معالجة تلقائية متطورة على السيرفر:</span>
+      <div class="bg-gradient-to-r from-purple-900/30 to-indigo-900/20 border border-purple-500/30 p-2.5 rounded-xl text-xs text-gray-300 flex flex-col gap-1 leading-relaxed">
+        <div class="flex items-center justify-between text-purple-300 font-bold">
+          <div class="flex items-center gap-1.5">
+            <span>⚡</span>
+            <span>حرق ترجمة احترافية بنمط Reels & TikTok:</span>
+          </div>
+          <span class="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/30">FFmpeg + libass</span>
         </div>
         <p class="text-[11px] text-gray-300">
-          يقوم النظام بسحب وفصل الصوت من الفيديو، وقراءة كلام المتحدث بدقة، وإذا كان الصوت إنجليزياً يُترجم فورياً إلى العربية، ثم يُحرق ويُكتب النص العربي داخل الفيديو بتوقيت متزامن تلقائياً وبنقرة واحدة!
+          حرق مباشر على السيرفر بخطوط عربية عريضة وألوان فيروسية براقة، مع إمكانية تقسيم الجمل الطويلة لعبارات سريعة (2-4 كلمات) لرفع معدل المشاهدات والتفاعل!
         </p>
       </div>
 
+      <!-- Quick Viral Presets Bar -->
+      <div class="flex flex-col gap-1.5">
+        <span class="text-[11px] font-bold text-gray-400">🔥 أنماط الريلز والتيك توك الجاهزة (نقرة واحدة لتغيير الستايل):</span>
+        <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5 text-xs">
+          <button type="button" class="sub-preset-btn active px-2 py-1.5 rounded-lg border border-yellow-400/60 bg-yellow-400/10 text-yellow-300 font-bold text-[11px] hover:bg-yellow-400/20 transition flex items-center justify-center gap-1" data-preset="tiktok_yellow">
+            <span>🟡</span>
+            <span>تيك توك ذهبي</span>
+          </button>
+          <button type="button" class="sub-preset-btn px-2 py-1.5 rounded-lg border border-gray-700 bg-gray-900 text-gray-200 font-semibold text-[11px] hover:border-purple-500/50 hover:bg-gray-800 transition flex items-center justify-center gap-1" data-preset="tiktok_box">
+            <span>📦</span>
+            <span>صندوق مظلل</span>
+          </button>
+          <button type="button" class="sub-preset-btn px-2 py-1.5 rounded-lg border border-gray-700 bg-gray-900 text-gray-200 font-semibold text-[11px] hover:border-emerald-500/50 hover:bg-gray-800 transition flex items-center justify-center gap-1" data-preset="tiktok_green">
+            <span>🟢</span>
+            <span>نيون أخضر</span>
+          </button>
+          <button type="button" class="sub-preset-btn px-2 py-1.5 rounded-lg border border-gray-700 bg-gray-900 text-gray-200 font-semibold text-[11px] hover:border-cyan-500/50 hover:bg-gray-800 transition flex items-center justify-center gap-1" data-preset="tiktok_cyan">
+            <span>🔵</span>
+            <span>نيون سماوي</span>
+          </button>
+          <button type="button" class="sub-preset-btn px-2 py-1.5 rounded-lg border border-gray-700 bg-gray-900 text-gray-200 font-semibold text-[11px] hover:border-orange-500/50 hover:bg-gray-800 transition flex items-center justify-center gap-1" data-preset="tiktok_fire">
+            <span>🔥</span>
+            <span>لهب ناري</span>
+          </button>
+          <button type="button" class="sub-preset-btn px-2 py-1.5 rounded-lg border border-gray-700 bg-gray-900 text-gray-200 font-semibold text-[11px] hover:border-gray-500 hover:bg-gray-800 transition flex items-center justify-center gap-1" data-preset="classic_white">
+            <span>⚪</span>
+            <span>أبيض ناصع</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Styling Controls Grid -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-gray-950/60 p-3 rounded-xl border border-gray-800">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-gray-950/60 p-2.5 rounded-xl border border-gray-800">
         <div>
           <label class="text-gray-400 block mb-1">نوع الخط:</label>
-          <select id="sub-font-select" class="w-full bg-[#151c2c] border border-gray-700 rounded-lg p-1.5 text-gray-200">
-            <option value="Amiri" selected>Amiri (أميري أصيل)</option>
-            <option value="'Cairo', sans-serif">Cairo (كايرو)</option>
-            <option value="'Tajawal', sans-serif">Tajawal (تجوال)</option>
-            <option value="DejaVuSans">DejaVu Sans</option>
+          <select id="sub-font-select" class="w-full bg-[#151c2c] border border-gray-700 rounded-lg p-1.5 text-gray-200 text-xs">
+            <option value="Cairo" selected>Cairo (كايرو عريض للريلز)</option>
+            <option value="Amiri">Amiri (أميري أصيل)</option>
+            <option value="DejaVuSans">DejaVu Sans (عريض واضح)</option>
           </select>
         </div>
         <div>
           <label class="text-gray-400 block mb-1">مكان الظهور:</label>
-          <select id="sub-pos-select" class="w-full bg-[#151c2c] border border-gray-700 rounded-lg p-1.5 text-gray-200">
-            <option value="bottom" selected>أسفل الفيديو</option>
-            <option value="middle">وسط الفيديو</option>
+          <select id="sub-pos-select" class="w-full bg-[#151c2c] border border-gray-700 rounded-lg p-1.5 text-gray-200 text-xs">
+            <option value="bottom" selected>أسفل (هامش ريلز آمن)</option>
+            <option value="middle">وسط الشاشة (سريع)</option>
             <option value="top">أعلى الفيديو</option>
           </select>
         </div>
         <div>
-          <label class="text-gray-400 block mb-1">لون النص:</label>
-          <input type="color" id="sub-color-picker" value="#facc15" class="w-full h-7 bg-transparent rounded cursor-pointer">
+          <label class="text-gray-400 block mb-1">نمط الإطار والخلفية:</label>
+          <select id="sub-border-style-select" class="w-full bg-[#151c2c] border border-gray-700 rounded-lg p-1.5 text-gray-200 text-xs">
+            <option value="1" selected>إطار أسود سميك (Stroke 3.5)</option>
+            <option value="3">صندوق خلفية مظلل (Box Style)</option>
+          </select>
         </div>
         <div>
-          <label class="text-gray-400 block mb-1">حجم الخط (<span id="sub-size-val">38</span>px):</label>
-          <input type="range" id="sub-size-range" min="20" max="52" value="38" class="w-full mt-1.5 accent-purple-500">
+          <label class="text-gray-400 block mb-1">لون النص وحجمه (<span id="sub-size-val">46</span>px):</label>
+          <div class="flex items-center gap-1.5">
+            <input type="color" id="sub-color-picker" value="#facc15" class="w-7 h-7 bg-transparent rounded cursor-pointer border border-gray-700">
+            <input type="range" id="sub-size-range" min="24" max="60" value="46" class="w-full accent-purple-500">
+          </div>
         </div>
       </div>
 
+      <!-- Reels Special Toggles -->
+      <div class="flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-gray-300">
+        <label class="flex items-center gap-1.5 cursor-pointer hover:text-white">
+          <input type="checkbox" id="sub-chunk-reels-toggle" checked class="accent-purple-500 w-3.5 h-3.5 rounded">
+          <span class="font-semibold text-purple-300">⚡ تقطيع سريع للريلز (2-4 كلمات بالسطر)</span>
+        </label>
+        <label class="flex items-center gap-1.5 cursor-pointer hover:text-white">
+          <input type="checkbox" id="sub-pop-anim-toggle" checked class="accent-purple-500 w-3.5 h-3.5 rounded">
+          <span class="text-gray-300">✨ حركة دخول سريعة Pop-in</span>
+        </label>
+      </div>
+
       <!-- Main Action: One-Click Auto-Caption & Burn Button -->
-      <button id="auto-caption-and-burn-btn" type="button" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-600 hover:opacity-95 text-white font-extrabold text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 transition transform active:scale-98">
-        <span class="text-lg">🎬</span>
-        <span>سحب الصوت وترجمته وكتابته داخل الفيديو فوراً</span>
+      <button id="auto-caption-and-burn-btn" type="button" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-600 hover:opacity-95 text-white font-extrabold text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 transition transform active:scale-98">
+        <span class="text-lg">🚀</span>
+        <span>توليد وحرق نصوص الريلز بضغطة واحدة (تلقائي وسريع)</span>
       </button>
 
       <!-- Status Indicator -->
       <div id="subtitles-status-text" class="text-xs text-center text-amber-300 font-semibold min-h-[16px]"></div>
 
-      <!-- Advanced / Manual Tools Accordion -->
-      <div class="flex items-center justify-between pt-2 border-t border-gray-800 text-xs">
+      <!-- Two-Step Workflow Accordion -->
+      <div class="flex items-center justify-between pt-1 border-t border-gray-800 text-xs">
         <button id="extract-cues-only-btn" type="button" class="text-purple-400 hover:text-purple-300 font-bold px-2.5 py-1 rounded-lg border border-purple-500/30 bg-purple-500/10">
-          📝 استخراج النصوص فقط للتعديل
+          📝 1. استخراج النصوص فقط للتعديل
         </button>
-        <button id="add-manual-cue-btn" type="button" class="text-gray-300 hover:text-white font-semibold px-2 py-1 rounded-lg border border-gray-700 bg-gray-800">
-          ➕ سطر يدوي
-        </button>
+        <div class="flex items-center gap-1.5">
+          <button id="add-manual-cue-btn" type="button" class="text-gray-300 hover:text-white font-semibold px-2 py-1 rounded-lg border border-gray-700 bg-gray-800">
+            ➕ سطر يدوي
+          </button>
+          <button id="burn-edited-cues-btn" type="button" class="text-emerald-300 hover:text-emerald-200 font-bold px-2.5 py-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10">
+            🎬 2. حرق النصوص المعدلة
+          </button>
+        </div>
       </div>
 
       <!-- Cues List -->
-      <div id="subtitles-cues-list" class="max-h-40 overflow-y-auto flex flex-col gap-1.5 pr-1 border border-gray-800/80 rounded-xl p-2 bg-black/40">
+      <div id="subtitles-cues-list" class="max-h-36 overflow-y-auto flex flex-col gap-1.5 pr-1 border border-gray-800/80 rounded-xl p-2 bg-black/40">
         <div class="text-center text-gray-500 text-xs py-3">
-          اضغط الزر الرئيسي بالأعلى ليقوم السيرفر بسحب الصوت وترجمته وحرقه بالفيديو مباشرة!
+          اضغط زر استخراج النصوص أو التوليد التلقائي بالأعلى لقراءة الصوت وحرق الترجمة!
         </div>
       </div>
 
       <div class="flex items-center justify-between gap-2 pt-1">
         <button id="preview-subtitles-overlay-btn" type="button" class="flex-1 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 border border-gray-700">
-          👁️ معاينة النصوص على الشاشة
+          👁️ معاينة فورية على الشاشة
         </button>
-        <a id="download-srt-btn" href="#" class="hidden px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-200 border border-gray-700" download="subtitles.srt">
-          📥 تحميل SRT
-        </a>
+        <div class="flex items-center gap-1.5">
+          <a id="download-srt-btn" href="#" class="hidden px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-200 border border-gray-700" download="subtitles.srt">
+            📥 تحميل SRT
+          </a>
+          <a id="download-ass-btn" href="#" class="hidden px-2.5 py-1.5 rounded-lg bg-purple-900/40 hover:bg-purple-800/60 text-xs font-semibold text-purple-200 border border-purple-600/40" download="subtitles.ass">
+            📥 تحميل ASS
+          </a>
+        </div>
       </div>
     </div>
   </div>

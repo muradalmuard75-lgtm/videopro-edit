@@ -263,8 +263,9 @@ class TasksManager {
     if (type === "text") {
       return `تم حرق النص والشعارات بنجاح (${data.size_mb || "0"} MB)`;
     }
-    if (type === "autocaption") {
-      return `تم سحب الصوت وحرق ${data.cues ? data.cues.length : 0} سطر ترجمة داخل الفيديو (${data.size_mb || "0"} MB)`;
+    if (type === "autocaption" || type === "burn_subtitles") {
+      const count = data.cues_burned || (data.cues ? data.cues.length : 0);
+      return `تم حرق ${count} سطر ترجمة بنمط Reels/TikTok في الفيديو (${data.size_mb || "0"} MB)`;
     }
     return "اكتمل بنجاح";
   }

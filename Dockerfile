@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     fonts-hosny-amiri \
     fonts-dejavu-core \
+    fonts-kacst \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python requirements
