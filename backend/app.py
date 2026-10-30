@@ -91,6 +91,22 @@ def resolve_video_path(video_id: str) -> str:
     if os.path.exists(target_exact):
         return target_exact
 
+    # Check exports directory for processed / reframed / exported videos
+    export_target = os.path.join(EXPORTS_DIR, f"{video_id}.mp4")
+    if os.path.exists(export_target):
+        return export_target
+
+    export_exact = os.path.join(EXPORTS_DIR, video_id)
+    if os.path.exists(export_exact):
+        return export_exact
+
+    # Recursively check subdirectories of EXPORTS_DIR (e.g. for split or highlight parts)
+    for root, dirs, files in os.walk(EXPORTS_DIR):
+        if video_id in files:
+            return os.path.join(root, video_id)
+        if f"{video_id}.mp4" in files:
+            return os.path.join(root, f"{video_id}.mp4")
+
     raise HTTPException(status_code=404, detail="Video file not found")
 
 @app.get("/api/health")
@@ -148,6 +164,10 @@ async def split_video(
         prefix=prefix
     )
     result["job_id"] = job_id
+    result["video_id"] = job_id
+    if result.get("chunks") and len(result["chunks"]) > 0:
+        result["url"] = result["chunks"][0]["url"]
+        result["filename"] = result["chunks"][0]["filename"]
     return result
 
 @app.post("/api/video/reframe")
@@ -173,6 +193,8 @@ async def reframe_video(
         raise HTTPException(status_code=500, detail=result["error"])
 
     result["url"] = f"/api/download/export/{out_name}"
+    result["video_id"] = out_name
+    result["filename"] = out_name
     return result
 
 @app.post("/api/video/remove-silence")
@@ -198,6 +220,8 @@ async def remove_silence(
         raise HTTPException(status_code=500, detail=result["error"])
 
     result["url"] = f"/api/download/export/{out_name}"
+    result["video_id"] = out_name
+    result["filename"] = out_name
     return result
 
 @app.post("/api/video/highlights")
@@ -220,6 +244,10 @@ async def get_highlights(
         highlight_duration=duration
     )
     result["job_id"] = job_id
+    result["video_id"] = job_id
+    if result.get("highlights") and len(result["highlights"]) > 0:
+        result["url"] = result["highlights"][0]["url"]
+        result["filename"] = result["highlights"][0]["filename"]
     return result
 
 @app.post("/api/video/subtitles")
@@ -270,6 +298,7 @@ async def export_video(
 
     result["url"] = f"/api/download/export/{out_name}"
     result["filename"] = out_name
+    result["video_id"] = out_name
     return result
 
 @app.post("/api/video/add-audio")
@@ -322,6 +351,7 @@ async def api_add_audio(
 
     result["url"] = f"/api/download/export/{out_name}"
     result["filename"] = out_name
+    result["video_id"] = out_name
     return result
 
 @app.post("/api/video/merge")
@@ -370,6 +400,7 @@ async def api_merge_clips(
 
     result["url"] = f"/api/download/export/{out_name}"
     result["filename"] = out_name
+    result["video_id"] = out_name
     return result
 
 @app.post("/api/video/add-text")
@@ -400,6 +431,7 @@ async def api_add_text(
 
     result["url"] = f"/api/download/export/{out_name}"
     result["filename"] = out_name
+    result["video_id"] = out_name
     return result
 
 # Download endpoints
@@ -451,10 +483,14 @@ async def delete_video(
         os.path.join(EXPORTS_DIR, f"{target_id}.mp4"),
     ]
     for p in candidates:
-        if os.path.exists(p) and os.path.isfile(p):
+        if os.path.exists(p):
             try:
-                os.remove(p)
-                deleted = True
+                if os.path.isfile(p):
+                    os.remove(p)
+                    deleted = True
+                elif os.path.isdir(p):
+                    shutil.rmtree(p, ignore_errors=True)
+                    deleted = True
             except Exception:
                 pass
 

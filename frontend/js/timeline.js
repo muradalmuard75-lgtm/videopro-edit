@@ -91,10 +91,12 @@ class TimelineEngine {
         }
       });
       this.video.addEventListener("loadedmetadata", () => {
-        this.duration = this.video.duration || 84;
-        this.renderRuler();
-        this.drawAudioWaveform();
-        this.renderFilmstrip();
+        if (this.video && this.video.duration && !isNaN(this.video.duration) && this.video.duration > 0) {
+          this.duration = this.video.duration;
+          this.renderRuler();
+          this.drawAudioWaveform();
+          this.renderFilmstrip();
+        }
       });
     }
 

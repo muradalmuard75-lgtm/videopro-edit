@@ -202,7 +202,7 @@ class SubtitlesManager {
     track.innerHTML = "";
 
     const video = document.getElementById("main-video");
-    const totalDuration = (video && video.duration > 0) ? video.duration : 84;
+    const totalDuration = (video && video.duration > 0) ? video.duration : (window.timelineInstance?.duration || 60);
 
     this.cues.forEach((cue) => {
       const leftPct = (cue.start_sec / totalDuration) * 100;

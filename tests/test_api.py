@@ -116,5 +116,29 @@ class TestVideoProSuite(unittest.TestCase):
         self.assertEqual(res_del.status_code, 200)
         self.assertTrue(res_del.json().get("success"))
 
+    def test_export_resolution_and_cleanup(self):
+        # 1. Export a small 480p clip
+        res = client.post("/api/video/export", data={
+            "video_id": "sample",
+            "resolution": "480p",
+            "format_type": "mp4"
+        })
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data.get("success"))
+        exported_vid_id = data.get("video_id")
+        self.assertIsNotNone(exported_vid_id)
+
+        # 2. Verify resolve_video_path finds it in EXPORTS_DIR
+        res_info = client.get(f"/api/video/info?video_id={exported_vid_id}")
+        self.assertEqual(res_info.status_code, 200)
+        self.assertIn("info", res_info.json())
+
+        # 3. Delete it via /api/video/delete
+        res_del = client.post("/api/video/delete", data={"video_id": exported_vid_id})
+        self.assertEqual(res_del.status_code, 200)
+        self.assertTrue(res_del.json().get("success"))
+        self.assertTrue(res_del.json().get("deleted"))
+
 if __name__ == "__main__":
     unittest.main()

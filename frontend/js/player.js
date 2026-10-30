@@ -46,6 +46,10 @@ class VideoPlayer {
       document.getElementById("video-file-input")?.click();
     });
 
+    if (!window.currentVideoId) {
+      this.showEmptyState();
+    }
+
     // Toggle play on center button or video click
     if (this.centerPlayBtn) {
       this.centerPlayBtn.addEventListener("click", () => this.togglePlay());
@@ -161,7 +165,7 @@ class VideoPlayer {
     const stepForwardBtn = document.getElementById("timeline-step-forward");
     if (stepForwardBtn) {
       stepForwardBtn.addEventListener("click", () => {
-        this.video.currentTime = Math.min(this.video.duration || 84, this.video.currentTime + 1);
+        this.video.currentTime = Math.min(this.video.duration || 0, this.video.currentTime + 1);
       });
     }
 
@@ -176,7 +180,7 @@ class VideoPlayer {
       } else if (e.code === "KeyJ") {
         this.video.currentTime = Math.max(0, this.video.currentTime - 1);
       } else if (e.code === "KeyL") {
-        this.video.currentTime = Math.min(this.video.duration || 84, this.video.currentTime + 1);
+        this.video.currentTime = Math.min(this.video.duration || 0, this.video.currentTime + 1);
       } else if (e.code === "KeyF") {
         this.toggleFullscreen();
       } else if (e.code === "KeyM") {
@@ -272,6 +276,10 @@ class VideoPlayer {
       this.video.removeAttribute("src");
       this.video.load();
     }
+    this.isPlaying = false;
+    this.updatePlayBtnIcons(false);
+    this.resetFilters();
+
     if (this.centerPlayBtn) this.centerPlayBtn.classList.add("hidden");
     if (bottomControls) bottomControls.classList.add("hidden");
     if (qualityBadge) qualityBadge.classList.add("hidden");
@@ -329,6 +337,8 @@ class VideoPlayer {
   }
 
   async openVideoInfoModal() {
+    if (!window.currentVideoId) return;
+
     const modal = document.getElementById("video-info-modal");
     if (!modal) return;
     modal.classList.remove("hidden");
@@ -342,12 +352,12 @@ class VideoPlayer {
       const w = this.video.videoWidth || 1920;
       const h = this.video.videoHeight || 1080;
       if (resEl) resEl.innerText = `${w}x${h} (${h >= 1080 ? '1080p Full HD' : h >= 720 ? '720p HD' : 'SD'})`;
-      if (durEl) durEl.innerText = this.formatTime(this.video.duration || 84);
+      if (durEl) durEl.innerText = this.formatTime(this.video.duration || 0);
       if (fpsEl) fpsEl.innerText = "30.0 FPS";
     }
 
     try {
-      const vid = window.currentVideoId || "sample";
+      const vid = window.currentVideoId;
       const res = await fetch(`/api/video/info?video_id=${vid}`);
       const data = await res.json();
       if (data && data.info) {

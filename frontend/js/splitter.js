@@ -6,8 +6,8 @@ class VideoSplitter {
   constructor() {
     this.modal = document.getElementById("splitter-modal");
     this.selectedInterval = 60; // default 1 min
-    this.videoDuration = 84; // default
-    this.currentVideoId = "sample";
+    this.videoDuration = 0;
+    this.currentVideoId = null;
     this.isProcessing = false;
 
     this.init();
@@ -258,10 +258,45 @@ class VideoSplitter {
 }
 
 window.VideoSplitter = VideoSplitter;
-window.previewChunk = function(url) {
+window.previewChunk = function(url, partTitle) {
   const video = document.getElementById("main-video");
+  const player = window.videoPlayerInstance;
+  const timeline = window.timelineInstance;
+
+  if (player) {
+    player.hideEmptyState();
+  }
   if (video) {
     video.src = url;
+    video.load();
     video.play().catch(() => {});
+    video.onloadedmetadata = () => {
+      if (timeline) {
+        timeline.duration = video.duration || 0;
+        timeline.setTime(0);
+        timeline.renderRuler();
+        timeline.drawAudioWaveform();
+        timeline.renderFilmstrip();
+      }
+    };
+  }
+
+  // Derive video filename for video_id so subsequent edits work
+  if (url) {
+    const parts = url.split("/");
+    const fname = parts[parts.length - 1];
+    if (fname) {
+      window.currentVideoId = fname;
+    }
+  }
+
+  // Close tasks modal if open and scroll to top
+  if (window.tasksManager) {
+    window.tasksManager.closeModal();
+  }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (timeline) {
+    timeline.showToast(partTitle ? `🎬 جاري معاينة "${partTitle}" في المشغل` : "🎬 جاري معاينة المقطع في المشغل");
   }
 };

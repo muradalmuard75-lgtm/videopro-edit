@@ -42,6 +42,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const prevId = window.currentVideoId;
     window.currentVideoId = null;
 
+    // Reset file input value so user can re-upload the same file immediately
+    if (fileInput) fileInput.value = "";
+
     // Reset Player to empty state
     player.showEmptyState();
 
@@ -49,7 +52,13 @@ document.addEventListener("DOMContentLoaded", () => {
     timeline.resetTimeline();
 
     // Reset Subtitles
-    if (subtitles) subtitles.cues = [];
+    if (subtitles) {
+      subtitles.cues = [];
+      if (subtitles.subtitlesOverlay) {
+        subtitles.subtitlesOverlay.innerText = "";
+        subtitles.subtitlesOverlay.classList.add("hidden");
+      }
+    }
 
     // Notify backend in background to remove upload
     try {
@@ -612,6 +621,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const audioModal = document.getElementById("audio-modal");
   [toolAudioBtn, quickAudioBtn].forEach(btn => {
     btn?.addEventListener("click", () => {
+      if (!window.currentVideoId) {
+        timeline.showToast("⚠️ يرجى رفع فيديو أولاً لإضافة مقطع صوتي");
+        fileInput?.click();
+        return;
+      }
       if (audioModal) {
         audioModal.classList.remove("hidden");
         audioModal.classList.add("flex");
@@ -751,6 +765,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const mergeModal = document.getElementById("merge-modal");
   [toolMergeBtn, quickMergeBtn].forEach(btn => {
     btn?.addEventListener("click", () => {
+      if (!window.currentVideoId) {
+        timeline.showToast("⚠️ يرجى رفع فيديو أولاً لدمج المقاطع");
+        fileInput?.click();
+        return;
+      }
       if (mergeModal) {
         mergeModal.classList.remove("hidden");
         mergeModal.classList.add("flex");
@@ -937,6 +956,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const textModal = document.getElementById("text-modal");
   [toolTextBtn, quickTextBtn].forEach(btn => {
     btn?.addEventListener("click", () => {
+      if (!window.currentVideoId) {
+        timeline.showToast("⚠️ يرجى رفع فيديو أولاً لحرق النصوص");
+        fileInput?.click();
+        return;
+      }
       if (textModal) {
         textModal.classList.remove("hidden");
         textModal.classList.add("flex");

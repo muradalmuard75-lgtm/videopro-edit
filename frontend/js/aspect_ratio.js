@@ -44,6 +44,13 @@ class AspectRatioManager {
   }
 
   openModal() {
+    if (!window.currentVideoId) {
+      if (window.timelineInstance) {
+        window.timelineInstance.showToast("⚠️ يرجى رفع فيديو أولاً لتغيير المقاس");
+      }
+      document.getElementById("video-file-input")?.click();
+      return;
+    }
     if (!this.modal) return;
     this.modal.classList.remove("hidden");
     this.modal.classList.add("flex");

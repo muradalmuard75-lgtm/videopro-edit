@@ -364,8 +364,24 @@ class TasksManager {
 
           <!-- Action Buttons Bar -->
           <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-gray-800/80">
+            <!-- 1. PREVIEW / LOAD INTO PLAYER BUTTON -->
             ${
-              !isSplit && resUrl ? `
+              isSplit ? `
+                <button onclick="window.tasksManager.loadTaskIntoPlayer('${task.id}')" class="flex-1 min-w-[120px] py-1.5 px-3 rounded-lg bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition cursor-pointer" title="معاينة المقطع الأول في المشغل">
+                  <span>معاينة (المقطع 1)</span>
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+              ` : isHighlights ? `
+                <button onclick="window.tasksManager.loadTaskIntoPlayer('${task.id}')" class="flex-1 min-w-[120px] py-1.5 px-3 rounded-lg bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition cursor-pointer" title="معاينة أفضل لقطة في المشغل">
+                  <span>معاينة (اللقطة 1)</span>
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+              ` : isSubtitles ? `
+                <button onclick="window.tasksManager.applySubtitlesToPlayer('${task.id}')" class="flex-1 min-w-[120px] py-1.5 px-3 rounded-lg bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition cursor-pointer">
+                  <span>معاينة وتطبيق الترجمة</span>
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+              ` : resUrl ? `
                 <button onclick="window.tasksManager.loadTaskIntoPlayer('${task.id}')" class="flex-1 min-w-[120px] py-1.5 px-3 rounded-lg bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition cursor-pointer">
                   <span>معاينة في المشغل</span>
                   <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -373,32 +389,32 @@ class TasksManager {
               ` : ""
             }
 
+            <!-- 2. DOWNLOAD FILE BUTTON -->
             ${
               isSplit && task.result?.zip_url ? `
                 <a href="${task.result.zip_url}" download class="flex-1 min-w-[140px] py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition text-center cursor-pointer">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                   <span>تحميل ملف ZIP الكامل (${task.result.zip_size_mb || 0} MB)</span>
                 </a>
-              ` : ""
-            }
-
-            ${
-              !isSplit && resUrl ? `
-                <a href="${resUrl}" download class="py-1.5 px-3 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition cursor-pointer">
+              ` : isHighlights && task.result?.highlights?.[0] ? `
+                <a href="${task.result.highlights[0].url}" download="${task.result.highlights[0].filename}" class="flex-1 min-w-[120px] py-1.5 px-3 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                  <span>تحميل اللقطة 1</span>
+                </a>
+              ` : isSubtitles ? `
+                <button onclick="window.tasksManager.downloadSubtitlesSrt('${task.id}')" class="flex-1 min-w-[120px] py-1.5 px-3 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                  <span>تحميل ملف SRT</span>
+                </button>
+              ` : resUrl ? `
+                <a href="${resUrl}" download class="flex-1 min-w-[120px] py-1.5 px-3 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow transition cursor-pointer">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                   <span>تحميل الملف</span>
                 </a>
               ` : ""
             }
 
-            ${
-              isSubtitles ? `
-                <button onclick="window.tasksManager.applySubtitlesToPlayer('${task.id}')" class="py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1 shadow transition cursor-pointer">
-                  <span>تطبيق على الفيديو</span>
-                </button>
-              ` : ""
-            }
-
+            <!-- 3. ACCORDION TOGGLES -->
             ${
               (isSplit && task.result?.chunks) ? `
                 <button onclick="window.tasksManager.toggleAccordion('${task.id}')" class="py-1.5 px-3 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer">
@@ -500,14 +516,22 @@ class TasksManager {
     const task = this.tasks.find((t) => t.id === taskId);
     if (!task || !task.result) return;
 
-    const url = task.result.url || task.result.preview_url;
+    let url = task.result.url || task.result.preview_url;
+    if (!url && task.result.chunks && task.result.chunks[0]) {
+      url = task.result.chunks[0].url;
+    }
+    if (!url && task.result.highlights && task.result.highlights[0]) {
+      url = task.result.highlights[0].url;
+    }
     if (!url) return;
 
     const videoEl = document.getElementById("main-video");
-    const emptyState = document.getElementById("empty-player-state");
     const timeline = window.timelineInstance;
+    const player = window.videoPlayerInstance;
 
-    if (emptyState) emptyState.classList.add("hidden");
+    if (player) {
+      player.hideEmptyState();
+    }
     if (videoEl) {
       videoEl.classList.remove("hidden");
       videoEl.src = url;
@@ -515,8 +539,9 @@ class TasksManager {
       videoEl.play().catch(() => {});
     }
 
-    // Set active video ID
-    window.currentVideoId = task.result.video_id || `task_${taskId}`;
+    // Set active video ID so subsequent tools work on the result
+    const newVidId = task.result.video_id || task.result.filename || (task.result.chunks && task.result.chunks[0]?.filename) || (task.result.highlights && task.result.highlights[0]?.filename) || `task_${taskId}`;
+    window.currentVideoId = newVidId;
 
     // Read duration and update timeline
     if (videoEl) {
@@ -548,10 +573,39 @@ class TasksManager {
       window.subtitlesInstance.cues = task.result.cues;
       window.subtitlesInstance.updateTimelineSubtitleBlocks();
       if (window.timelineInstance) {
+        window.timelineInstance.setTime(0);
         window.timelineInstance.showToast("📝 تم تطبيق خطوط الترجمة على التايم لاين والمشغل!");
       }
+      const video = document.getElementById("main-video");
+      if (video) video.currentTime = 0;
     }
     this.closeModal();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  downloadSubtitlesSrt(taskId) {
+    const task = this.tasks.find((t) => t.id === taskId);
+    if (!task || !task.result || !task.result.cues) return;
+
+    const srtContent = task.result.cues.map((c, i) => {
+      const s = (c.start || "00:00:00.000").replace(".", ",");
+      const e = (c.end || "00:00:05.000").replace(".", ",");
+      return `${i + 1}\n${s} --> ${e}\n${c.text}\n`;
+    }).join("\n");
+
+    const blob = new Blob([srtContent], { type: "text/plain;charset=utf-8" });
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = `subtitles_${Date.now()}.srt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+
+    if (window.timelineInstance) {
+      window.timelineInstance.showToast("📥 تم تحميل ملف الترجمة SRT بنجاح");
+    }
   }
 
   deleteTask(taskId) {
