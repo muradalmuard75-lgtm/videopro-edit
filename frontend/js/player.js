@@ -29,7 +29,22 @@ class VideoPlayer {
   }
 
   init() {
-    if (!this.video) return;
+    // Hook player delete button
+    document.getElementById("player-delete-video-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (window.deleteCurrentVideo) {
+        window.deleteCurrentVideo();
+      }
+    });
+
+    // Empty state upload trigger
+    document.getElementById("empty-state-upload-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.getElementById("video-file-input")?.click();
+    });
+    document.getElementById("empty-player-state")?.addEventListener("click", () => {
+      document.getElementById("video-file-input")?.click();
+    });
 
     // Toggle play on center button or video click
     if (this.centerPlayBtn) {
@@ -235,9 +250,52 @@ class VideoPlayer {
 
   updateTimeDisplay() {
     if (!this.timeDisplay) return;
+    if (!window.currentVideoId || !this.video || !this.video.duration || isNaN(this.video.duration)) {
+      this.timeDisplay.innerText = "00:00 / 00:00";
+      return;
+    }
     const cur = this.formatTime(this.video.currentTime);
-    const dur = this.formatTime(this.video.duration || 84);
+    const dur = this.formatTime(this.video.duration);
     this.timeDisplay.innerText = `${cur} / ${dur}`;
+  }
+
+  showEmptyState() {
+    const emptyState = document.getElementById("empty-player-state");
+    const bottomControls = document.getElementById("player-bottom-controls");
+    const qualityBadge = document.getElementById("player-quality-badge");
+    const delBtn = document.getElementById("player-delete-video-btn");
+
+    if (emptyState) emptyState.classList.remove("hidden");
+    if (this.video) {
+      this.video.classList.add("hidden");
+      this.video.pause();
+      this.video.removeAttribute("src");
+      this.video.load();
+    }
+    if (this.centerPlayBtn) this.centerPlayBtn.classList.add("hidden");
+    if (bottomControls) bottomControls.classList.add("hidden");
+    if (qualityBadge) qualityBadge.classList.add("hidden");
+    if (delBtn) delBtn.classList.add("hidden");
+    if (this.subtitlesOverlay) {
+      this.subtitlesOverlay.innerText = "";
+      this.subtitlesOverlay.classList.add("hidden");
+    }
+    this.updateTimeDisplay();
+  }
+
+  hideEmptyState() {
+    const emptyState = document.getElementById("empty-player-state");
+    const bottomControls = document.getElementById("player-bottom-controls");
+    const qualityBadge = document.getElementById("player-quality-badge");
+    const delBtn = document.getElementById("player-delete-video-btn");
+
+    if (emptyState) emptyState.classList.add("hidden");
+    if (this.video) this.video.classList.remove("hidden");
+    if (this.centerPlayBtn) this.centerPlayBtn.classList.remove("hidden");
+    if (bottomControls) bottomControls.classList.remove("hidden");
+    if (qualityBadge) qualityBadge.classList.remove("hidden");
+    if (delBtn) delBtn.classList.remove("hidden");
+    this.updateTimeDisplay();
   }
 
   formatTime(seconds) {

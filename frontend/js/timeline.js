@@ -6,7 +6,7 @@ class TimelineEngine {
     this.video = videoElement;
     this.container = containerElement;
     this.currentTime = 0;
-    this.duration = 84; // default demo
+    this.duration = 0; // Starts empty until user uploads video
     this.zoom = 1.0;
     this.isPlaying = false;
     this.isDraggingPlayhead = false;
@@ -132,9 +132,13 @@ class TimelineEngine {
       this.cutAtPlayhead();
     });
 
-    // Delete cut / segment
+    // Delete video from studio (or active cut)
     document.getElementById("timeline-delete-btn")?.addEventListener("click", () => {
-      this.deleteActiveCut();
+      if (window.deleteCurrentVideo) {
+        window.deleteCurrentVideo();
+      } else {
+        this.deleteActiveCut();
+      }
     });
 
     // Timecode box click -> jump modal
@@ -291,6 +295,12 @@ class TimelineEngine {
   }
 
   setTime(seconds) {
+    if (this.duration <= 0) {
+      this.currentTime = 0;
+      if (this.playheadEl) this.playheadEl.style.left = "0%";
+      if (this.timecodeDisplay) this.timecodeDisplay.innerText = "00:00:00.00";
+      return;
+    }
     this.currentTime = Math.max(0, Math.min(seconds, this.duration));
     const percentage = (this.currentTime / this.duration) * 100;
 
@@ -328,6 +338,16 @@ class TimelineEngine {
     if (!rulerEl) return;
     rulerEl.innerHTML = "";
 
+    if (this.duration <= 0) {
+      rulerEl.innerHTML = `
+        <div class="absolute flex flex-col items-center text-[10px] text-gray-500 select-none" style="left: 0%;">
+          <span class="leading-none mb-1 font-mono">00:00</span>
+          <div class="w-[1px] h-2 bg-gray-700"></div>
+        </div>
+      `;
+      return;
+    }
+
     const totalSeconds = Math.ceil(this.duration);
     const step = totalSeconds > 180 ? 30 : totalSeconds > 60 ? 15 : 5;
 
@@ -354,11 +374,20 @@ class TimelineEngine {
     if (!filmstripEl) return;
     filmstripEl.innerHTML = "";
 
+    if (this.duration <= 0 || !window.currentVideoId) {
+      filmstripEl.innerHTML = `
+        <div class="w-full h-full flex items-center justify-center text-[11px] text-gray-500 font-medium select-none">
+          بانتظار رفع الفيديو لعرض شريط المشاهد...
+        </div>
+      `;
+      return;
+    }
+
     const frameCount = 14;
     for (let i = 0; i < frameCount; i++) {
       const frame = document.createElement("div");
-      frame.className = "filmstrip-frame flex-1 border-r border-black/40 bg-cover bg-center relative";
-      frame.style.backgroundImage = "url('/static/assets/thumbnail.jpg')";
+      frame.className = "filmstrip-frame flex-1 border-r border-black/40 bg-cover bg-center relative bg-gradient-to-b from-purple-950/30 to-indigo-950/20";
+      frame.innerHTML = `<div class="w-full h-full flex items-center justify-center text-[9px] text-purple-400/40 font-mono">F${i + 1}</div>`;
       filmstripEl.appendChild(frame);
     }
 
@@ -384,6 +413,18 @@ class TimelineEngine {
 
     ctx.clearRect(0, 0, width, height);
 
+    if (this.duration <= 0 || !window.currentVideoId) {
+      ctx.strokeStyle = "rgba(75, 85, 99, 0.4)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(0, height / 2);
+      ctx.lineTo(width, height / 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      return;
+    }
+
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
     gradient.addColorStop(0, "#34d399"); // emerald
     gradient.addColorStop(0.5, "#06b6d4"); // cyan
@@ -408,6 +449,20 @@ class TimelineEngine {
       ctx.roundRect(x, y, barWidth, barHeight, 1.5);
       ctx.fill();
     }
+  }
+
+  resetTimeline() {
+    this.duration = 0;
+    this.currentTime = 0;
+    this.cutPoints = [0];
+    this.undoStack = [];
+    this.redoStack = [];
+    this.setTime(0);
+    this.renderRuler();
+    this.drawAudioWaveform();
+    this.renderFilmstrip();
+    const track = document.getElementById("subtitles-timeline-track");
+    if (track) track.innerHTML = "";
   }
 }
 

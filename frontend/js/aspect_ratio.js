@@ -76,6 +76,44 @@ class AspectRatioManager {
   }
 
   async executeReframe() {
+    if (!window.currentVideoId) {
+      if (window.timelineInstance) {
+        window.timelineInstance.showToast("⚠️ يرجى رفع فيديو أولاً لتغيير المقاس");
+      }
+      this.closeModal();
+      document.getElementById("video-file-input")?.click();
+      return;
+    }
+
+    const ratio = this.selectedRatio;
+    const mode = this.selectedMode;
+    const ratioTitle = `تحويل مقاس الكادر إلى ${ratio} (${mode === 'smart_blur' ? 'بلور ذكي' : 'قص الكادر'})`;
+
+    if (window.tasksManager) {
+      const vidId = window.currentVideoId;
+      window.tasksManager.runBackgroundTask({
+        type: "reframe",
+        title: ratioTitle,
+        icon: "📱",
+        dismissModalId: "reframe-modal",
+        apiCall: async () => {
+          const formData = new FormData();
+          formData.append("video_id", vidId);
+          formData.append("target_ratio", ratio);
+          formData.append("mode", mode);
+
+          const resp = await fetch("/api/video/reframe", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await resp.json();
+          if (!resp.ok || data.error) throw new Error(data.error || "فشل تحويل المقاس");
+          return data;
+        },
+      });
+      return;
+    }
+
     if (this.isProcessing) return;
     this.isProcessing = true;
 
@@ -88,7 +126,7 @@ class AspectRatioManager {
 
     try {
       const formData = new FormData();
-      formData.append("video_id", window.currentVideoId || "sample");
+      formData.append("video_id", window.currentVideoId);
       formData.append("target_ratio", this.selectedRatio);
       formData.append("mode", this.selectedMode);
 

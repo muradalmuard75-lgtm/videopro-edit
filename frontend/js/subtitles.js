@@ -65,6 +65,13 @@ class SubtitlesManager {
   }
 
   openModal() {
+    if (!window.currentVideoId) {
+      if (window.timelineInstance) {
+        window.timelineInstance.showToast("⚠️ يرجى رفع فيديو أولاً لتوليد الترجمة التلقائية");
+      }
+      document.getElementById("video-file-input")?.click();
+      return;
+    }
     if (!this.modal) return;
     this.modal.classList.remove("hidden");
     this.modal.classList.add("flex");
@@ -98,17 +105,52 @@ class SubtitlesManager {
   }
 
   async generateAutoSubtitles() {
+    if (!window.currentVideoId) {
+      if (window.timelineInstance) window.timelineInstance.showToast("⚠️ يرجى رفع فيديو أولاً للبدء");
+      this.closeModal();
+      document.getElementById("video-file-input")?.click();
+      return;
+    }
+
+    const langSelect = document.getElementById("sub-lang-select");
+    const targetLang = langSelect ? langSelect.value : "ar";
+    const vidId = window.currentVideoId;
+
+    if (window.tasksManager) {
+      window.tasksManager.runBackgroundTask({
+        type: "subtitles",
+        title: `توليد ترجمة فورية تلقائية (${targetLang === "ar" ? "العربية" : targetLang})`,
+        icon: "📝",
+        dismissModalId: "subtitles-modal",
+        apiCall: async () => {
+          const formData = new FormData();
+          formData.append("video_id", vidId);
+          formData.append("language", targetLang);
+
+          const resp = await fetch("/api/video/subtitles", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await resp.json();
+          if (!resp.ok || data.error) throw new Error(data.error || "فشل توليد الترجمة");
+          return data;
+        },
+        onSuccess: (data) => {
+          this.cues = data.cues || [];
+          this.updateTimelineSubtitleBlocks();
+        },
+      });
+      return;
+    }
+
     const statusText = document.getElementById("subtitles-status-text");
     const cuesList = document.getElementById("subtitles-cues-list");
-    const langSelect = document.getElementById("sub-lang-select");
-
-    const targetLang = langSelect ? langSelect.value : "ar";
 
     if (statusText) statusText.innerText = "جاري تحويل الصوت إلى نص وتوليد الترجمة بدقة عالية...";
 
     try {
       const formData = new FormData();
-      formData.append("video_id", window.currentVideoId || "sample");
+      formData.append("video_id", vidId);
       formData.append("language", targetLang);
 
       const resp = await fetch("/api/video/subtitles", {

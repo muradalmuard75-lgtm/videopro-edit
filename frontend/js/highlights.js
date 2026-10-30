@@ -20,6 +20,13 @@ class HighlightsManager {
   }
 
   openModal() {
+    if (!window.currentVideoId) {
+      if (window.timelineInstance) {
+        window.timelineInstance.showToast("⚠️ يرجى رفع فيديو أولاً لاستخراج أفضل اللقطات");
+      }
+      document.getElementById("video-file-input")?.click();
+      return;
+    }
     if (!this.modal) return;
     this.modal.classList.remove("hidden");
     this.modal.classList.add("flex");
@@ -32,6 +39,41 @@ class HighlightsManager {
   }
 
   async extractHighlights() {
+    if (!window.currentVideoId) {
+      if (window.timelineInstance) window.timelineInstance.showToast("⚠️ يرجى رفع فيديو أولاً للبدء");
+      this.closeModal();
+      document.getElementById("video-file-input")?.click();
+      return;
+    }
+
+    const count = document.getElementById("highlights-count-select")?.value || "3";
+    const duration = document.getElementById("highlights-dur-select")?.value || "20";
+    const vidId = window.currentVideoId;
+
+    if (window.tasksManager) {
+      window.tasksManager.runBackgroundTask({
+        type: "highlights",
+        title: `استخراج أفضل ${count} لقطات بالذكاء الاصطناعي (AI)`,
+        icon: "🎯",
+        dismissModalId: "highlights-modal",
+        apiCall: async () => {
+          const formData = new FormData();
+          formData.append("video_id", vidId);
+          formData.append("count", count);
+          formData.append("duration", duration);
+
+          const resp = await fetch("/api/video/highlights", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await resp.json();
+          if (!resp.ok || data.error) throw new Error(data.error || "فشل استخراج اللقطات");
+          return data;
+        },
+      });
+      return;
+    }
+
     if (this.isProcessing) return;
     this.isProcessing = true;
 
@@ -42,11 +84,8 @@ class HighlightsManager {
     if (container) container.innerHTML = "";
 
     try {
-      const count = document.getElementById("highlights-count-select")?.value || "3";
-      const duration = document.getElementById("highlights-dur-select")?.value || "20";
-
       const formData = new FormData();
-      formData.append("video_id", window.currentVideoId || "sample");
+      formData.append("video_id", vidId);
       formData.append("count", count);
       formData.append("duration", duration);
 

@@ -72,10 +72,17 @@ class VideoSplitter {
   }
 
   openModal() {
+    if (!window.currentVideoId) {
+      if (window.timelineInstance) {
+        window.timelineInstance.showToast("⚠️ يرجى رفع فيديو أولاً قبل تقطيع الفواصل");
+      }
+      document.getElementById("video-file-input")?.click();
+      return;
+    }
     if (!this.modal) return;
     const video = document.getElementById("main-video");
-    this.videoDuration = (video && video.duration > 0) ? video.duration : 84;
-    this.currentVideoId = window.currentVideoId || "sample";
+    this.videoDuration = (video && video.duration > 0) ? video.duration : (window.timelineInstance?.duration || 60);
+    this.currentVideoId = window.currentVideoId;
     this.updateCalculationPreview();
     this.modal.classList.remove("hidden");
     this.modal.classList.add("flex");
@@ -94,7 +101,7 @@ class VideoSplitter {
 
     const totalSeconds = this.videoDuration;
     const interval = this.selectedInterval || 60;
-    const partsCount = Math.ceil(totalSeconds / interval);
+    const partsCount = Math.max(1, Math.ceil(totalSeconds / interval));
 
     if (countEl) countEl.innerText = `${partsCount} مقاطع`;
     if (durEl) durEl.innerText = this.formatTime(totalSeconds);
@@ -122,6 +129,41 @@ class VideoSplitter {
   }
 
   async runSplitting() {
+    if (!window.currentVideoId) {
+      if (window.timelineInstance) window.timelineInstance.showToast("⚠️ يرجى رفع فيديو أولاً للبدء");
+      this.closeModal();
+      document.getElementById("video-file-input")?.click();
+      return;
+    }
+
+    const interval = this.selectedInterval;
+    const vidId = window.currentVideoId;
+    const taskTitle = `تقطيع الفيديو إلى فواصل (${interval} ثانية)`;
+
+    if (window.tasksManager) {
+      window.tasksManager.runBackgroundTask({
+        type: "split",
+        title: taskTitle,
+        icon: "✂️",
+        dismissModalId: "splitter-modal",
+        apiCall: async () => {
+          const formData = new FormData();
+          formData.append("video_id", vidId);
+          formData.append("interval_seconds", interval.toString());
+          formData.append("prefix", "clip");
+
+          const response = await fetch("/api/video/split", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await response.json();
+          if (!response.ok || data.error) throw new Error(data.error || "فشل تقطيع الفيديو");
+          return data;
+        },
+      });
+      return;
+    }
+
     if (this.isProcessing) return;
     this.isProcessing = true;
 
@@ -137,7 +179,7 @@ class VideoSplitter {
 
     try {
       const formData = new FormData();
-      formData.append("video_id", this.currentVideoId);
+      formData.append("video_id", vidId);
       formData.append("interval_seconds", this.selectedInterval.toString());
       formData.append("prefix", "clip");
 

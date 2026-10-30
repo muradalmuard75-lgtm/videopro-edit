@@ -76,6 +76,11 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
         الرئيسية
       </button>
+      <button id="tasks-drawer-btn" class="flex items-center gap-1.5 px-3.5 py-2 text-gray-200 hover:text-white font-medium text-sm transition rounded-lg hover:bg-purple-900/40 cursor-pointer border border-transparent hover:border-purple-500/50 bg-transparent relative">
+        <span class="text-sm">📋</span>
+        <span>مربع المهام</span>
+        <span id="tasks-header-badge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-black shadow">0</span>
+      </button>
       <button id="nav-projects-btn" class="px-4 py-2 text-gray-300 hover:text-white font-medium text-sm transition rounded-lg hover:bg-gray-800/60 cursor-pointer border-0 bg-transparent">
         مشاريعي
       </button>
@@ -90,6 +95,10 @@
 
     <!-- Mobile Header Quick Actions (Touch friendly on mobile) -->
     <div class="flex lg:hidden items-center gap-1 sm:gap-1.5 text-xs">
+      <button id="mobile-tasks-drawer-btn" class="px-2 sm:px-2.5 py-1 rounded-lg bg-purple-900/40 hover:bg-purple-800/50 text-purple-200 text-[11px] font-bold border border-purple-500/60 cursor-pointer flex items-center gap-1" title="مربع المهام والعمليات">
+        <span>📋 المهام</span>
+        <span id="mobile-tasks-header-badge" class="hidden px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-amber-400 text-black">0</span>
+      </button>
       <button id="mobile-nav-projects-btn" class="px-2 sm:px-2.5 py-1 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-gray-200 text-[11px] font-medium border border-gray-700/60 cursor-pointer">
         مشاريعي
       </button>
@@ -136,16 +145,43 @@
     <section class="order-1 lg:order-2 w-full lg:col-span-6 flex flex-col gap-3">
       <div id="player-container" class="relative w-full aspect-video rounded-xl sm:rounded-2xl overflow-hidden bg-black border border-gray-800 shadow-2xl flex items-center justify-center group select-none">
         
-        <!-- Video Element -->
-        <video id="main-video" class="w-full h-full object-contain cursor-pointer" preload="metadata" playsinline poster="/static/assets/thumbnail.jpg">
-          <source src="/static/assets/demo_video.mp4" type="video/mp4">
-          متصفحك لا يدعم تشغيل الفيديو.
-        </video>
+        <!-- Modern Empty Player State (Shown initially and when video is deleted) -->
+        <div id="empty-player-state" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10 bg-gradient-to-b from-[#0e1422] to-[#070b12] border-2 border-dashed border-gray-800 hover:border-purple-500/60 transition duration-300 cursor-pointer">
+          <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-purple-950/50 border border-purple-500/40 flex items-center justify-center text-purple-400 mb-3.5 shadow-xl shadow-purple-950/40 group-hover:scale-105 transition transform">
+            <svg class="w-8 h-8 sm:w-10 sm:h-10 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            </svg>
+          </div>
+          <h3 class="text-base sm:text-lg font-black text-white tracking-wide">قم باختيار أو رفع فيديو للبدء</h3>
+          <p class="text-xs sm:text-sm text-gray-400 mt-1.5 max-w-md leading-relaxed">
+            اسحب ملف الفيديو وأفلته هنا، أو اضغط على الزر أدناه لاختيار فيديو من هاتفك أو جهازك
+          </p>
+          <button id="empty-state-upload-btn" class="mt-4 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-xl shadow-purple-600/30 transition transform hover:scale-105 active:scale-95 cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            <span>اختيار فيديو من الجهاز 📁</span>
+          </button>
+          <div class="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500 mt-3 font-medium">
+            <span>MP4, MOV, WebM, MKV</span>
+            <span>•</span>
+            <span>جودة فائقة حتى 4K</span>
+            <span>•</span>
+            <span>معالجة سريعة</span>
+          </div>
+        </div>
+
+        <!-- Video Element (Hidden until a video is loaded) -->
+        <video id="main-video" class="w-full h-full object-contain cursor-pointer hidden" preload="metadata" playsinline></video>
 
         <!-- 1080p HD Badge (Top-Left, Clickable for tech specs) -->
-        <button id="player-quality-badge" class="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-md bg-black/60 hover:bg-black/85 backdrop-blur-md border border-white/10 hover:border-purple-400 text-white font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow transition cursor-pointer" title="عرض مواصفات الفيديو وجودة العرض">
+        <button id="player-quality-badge" class="hidden absolute top-3 left-3 z-20 px-2.5 py-1 rounded-md bg-black/60 hover:bg-black/85 backdrop-blur-md border border-white/10 hover:border-purple-400 text-white font-bold text-[10px] sm:text-xs items-center gap-1.5 shadow transition cursor-pointer" title="عرض مواصفات الفيديو وجودة العرض">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
           <span id="player-badge-text">1080p HD</span>
+        </button>
+
+        <!-- Delete Video Button (Top-Right, next to upload) -->
+        <button id="player-delete-video-btn" class="hidden absolute top-3 right-28 z-20 items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-950/80 hover:bg-red-900 border border-red-500/50 text-[11px] font-semibold text-red-200 hover:text-white transition shadow cursor-pointer" title="حذف الفيديو الحالي وإعادة تعيين الاستوديو">
+          <svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          <span class="hidden sm:inline">حذف الفيديو</span>
         </button>
 
         <!-- Floating Upload Button (Top-Right) -->
@@ -155,7 +191,7 @@
         </button>
 
         <!-- Center Big Play Button -->
-        <button id="center-play-btn" class="absolute z-20 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition-all duration-300 transform group-hover:scale-110 shadow-2xl cursor-pointer">
+        <button id="center-play-btn" class="hidden absolute z-20 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/20 text-white items-center justify-center transition-all duration-300 transform group-hover:scale-110 shadow-2xl cursor-pointer">
           <svg class="w-6 h-6 sm:w-7 sm:h-7 text-white fill-current ml-1" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         </button>
 
@@ -166,10 +202,10 @@
         <input type="file" id="video-file-input" accept="video/*" class="hidden">
 
         <!-- Bottom In-Player Controls Overlay -->
-        <div class="absolute bottom-0 inset-x-0 h-10 sm:h-11 bg-gradient-to-t from-black/95 via-black/60 to-transparent px-3 sm:px-4 flex items-center justify-between z-20 text-white text-xs">
+        <div id="player-bottom-controls" class="hidden absolute bottom-0 inset-x-0 h-10 sm:h-11 bg-gradient-to-t from-black/95 via-black/60 to-transparent px-3 sm:px-4 items-center justify-between z-20 text-white text-xs">
           <!-- Time indicator -->
           <div class="flex items-center gap-2">
-            <span id="player-time-display" class="font-mono text-gray-200 text-[11px] sm:text-xs tracking-wider">00:00 / 01:24</span>
+            <span id="player-time-display" class="font-mono text-gray-200 text-[11px] sm:text-xs tracking-wider">00:00 / 00:00</span>
           </div>
 
           <!-- Quick Right Controls -->
@@ -219,13 +255,13 @@
           <button id="timeline-split-btn" class="p-1 sm:p-1.5 rounded hover:bg-indigo-900/40 text-indigo-400 hover:text-indigo-300 transition cursor-pointer" title="تقطيع الفيديو وتقسيم الفواصل">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
           </button>
-          <button id="timeline-delete-btn" class="p-1 sm:p-1.5 rounded hover:bg-red-950/40 text-gray-400 hover:text-red-400 transition cursor-pointer" title="حذف نقطة القطع">
+          <button id="timeline-delete-btn" class="p-1 sm:p-1.5 rounded hover:bg-red-950/60 text-red-400 hover:text-red-300 transition cursor-pointer" title="حذف الفيديو الحالي وإعادة تعيين الاستوديو">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
 
           <!-- Timecode Box (Click to jump) -->
           <div id="timecode-display" class="px-2 sm:px-3 py-1 rounded bg-[#131926] hover:bg-[#1c2438] border border-gray-700 hover:border-purple-400 text-purple-300 font-mono text-[11px] sm:text-xs font-bold tracking-wider select-none shrink-0 cursor-pointer transition" title="انقر لتحديد توقيت محدد في الفيديو">
-            00:00:15.00
+            00:00:00.00
           </div>
         </div>
 
@@ -295,13 +331,10 @@
           </div>
 
           <!-- Track 3: Subtitles Cues Track -->
-          <div id="subtitles-timeline-track" class="timeline-track h-10 sm:h-12 w-full relative rounded-lg overflow-hidden bg-[#0c121e] border border-blue-900/30">
-            <div class="subtitle-block" style="left: 5%; width: 25%;">مرحباً بكم في محرر الفيديو</div>
-            <div class="subtitle-block" style="left: 35%; width: 30%;">أداة احترافية وسهلة الاستخدام</div>
-          </div>
+          <div id="subtitles-timeline-track" class="timeline-track h-10 sm:h-12 w-full relative rounded-lg overflow-hidden bg-[#0c121e] border border-blue-900/30"></div>
 
           <!-- Vertical Playhead Line & Handle -->
-          <div id="timeline-playhead" class="playhead-line" style="left: 17.8%;">
+          <div id="timeline-playhead" class="playhead-line" style="left: 0%;">
             <div id="playhead-handle" class="playhead-handle" title="اسحب للتنقل في الفيديو"></div>
           </div>
 
@@ -1580,6 +1613,49 @@
   </div>
 
 
+  <!-- 20. BACKGROUND TASKS MANAGER MODAL ("مربع المهام") -->
+  <div id="tasks-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-3 sm:p-4">
+    <div class="glass-panel w-full max-w-2xl p-4 sm:p-6 modal-enter border border-purple-500/50 glow-purple flex flex-col gap-4 max-h-[92vh] overflow-hidden">
+      
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-gray-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-600/30 text-purple-400 border border-purple-500/30 flex items-center justify-center text-xl shadow">
+            📋
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-sm sm:text-base text-white">مربع المهام والعمليات</h3>
+              <span class="text-[10px] bg-purple-900/60 text-purple-300 border border-purple-700/50 px-2 py-0.5 rounded-full font-bold">معالجة بالخلفية</span>
+            </div>
+            <p id="tasks-modal-summary" class="text-[11px] text-gray-400 mt-0.5">
+              تعمل كافة العمليات في الخلفية دون تعطيل عملك في الاستوديو
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="clear-completed-tasks-btn" class="px-2.5 py-1 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-gray-300 hover:text-white text-[11px] font-medium border border-gray-700 transition cursor-pointer" title="مسح المهام المكتملة">
+            مسح المكتملة
+          </button>
+          <button id="close-tasks-modal" class="w-8 h-8 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-gray-300 hover:text-white flex items-center justify-center transition cursor-pointer">✕</button>
+        </div>
+      </div>
+
+      <!-- Tasks List Container (Scrollable) -->
+      <div id="tasks-list-container" class="flex-1 overflow-y-auto flex flex-col gap-3 pr-1 max-h-[65vh]">
+        <!-- Populated dynamically by TasksManager -->
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FLOATING TASKS BADGE / BUTTON (Mobile & Desktop quick access) -->
+  <button id="floating-tasks-btn" class="fixed bottom-4 left-4 z-40 flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-[#101625]/95 hover:bg-purple-950/90 backdrop-blur-md border border-purple-500/60 shadow-2xl text-xs font-bold text-white transition-all transform hover:scale-105 active:scale-95 cursor-pointer group" title="مربع المهام والعمليات في الخلفية">
+    <span id="floating-tasks-icon" class="text-base group-hover:rotate-12 transition">📋</span>
+    <span id="floating-tasks-text" class="hidden xs:inline">مربع المهام</span>
+    <span id="floating-tasks-badge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-black shadow">0</span>
+  </button>
+
   <!-- Footer Info -->
   <footer class="w-full py-2.5 px-4 sm:px-6 border-t border-[#141b2b] bg-[#090d14] flex flex-col sm:flex-row items-center justify-between text-[10px] sm:text-[11px] text-gray-500 gap-1.5 sm:gap-0">
     <div>VideoPro Edit © 2026 - استوديو تحرير وتقطيع الفيديو الاحترافي</div>
@@ -1598,6 +1674,7 @@
   <script src="/static/js/silence_remover.js"></script>
   <script src="/static/js/highlights.js"></script>
   <script src="/static/js/subtitles.js"></script>
+  <script src="/static/js/tasks_manager.js"></script>
   <script src="/static/js/app.js"></script>
 </body>
 </html>

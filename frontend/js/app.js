@@ -3,7 +3,7 @@
  * Comprehensive handlers for all buttons, real upload progress, modals, tools, and export
  */
 document.addEventListener("DOMContentLoaded", () => {
-  window.currentVideoId = "sample";
+  window.currentVideoId = null;
   window.activeUploadXHR = null;
 
   // Key Elements
@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize Core Engines
   const player = new VideoPlayer(videoEl);
   const timeline = new TimelineEngine(videoEl, timelineContainer);
+  const tasksManager = new TasksManager();
   const splitter = new VideoSplitter();
   const reframe = new AspectRatioManager();
   const silence = new SilenceRemover();
@@ -22,11 +23,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.videoPlayerInstance = player;
   window.timelineInstance = timeline;
+  window.tasksManager = tasksManager;
   window.splitterInstance = splitter;
   window.reframeInstance = reframe;
   window.silenceInstance = silence;
   window.highlightsInstance = highlights;
   window.subtitlesInstance = subtitles;
+
+  // ========================================================
+  // DELETE VIDEO & RESET WORKSPACE
+  // ========================================================
+  window.deleteCurrentVideo = async function() {
+    if (!window.currentVideoId) {
+      timeline.showToast("لا يوجد فيديو محمل حالياً للحذف");
+      return;
+    }
+
+    const prevId = window.currentVideoId;
+    window.currentVideoId = null;
+
+    // Reset Player to empty state
+    player.showEmptyState();
+
+    // Reset Timeline
+    timeline.resetTimeline();
+
+    // Reset Subtitles
+    if (subtitles) subtitles.cues = [];
+
+    // Notify backend in background to remove upload
+    try {
+      const fd = new FormData();
+      fd.append("video_id", prevId);
+      fetch("/api/video/delete", { method: "POST", body: fd }).catch(() => {});
+    } catch (e) {}
+
+    timeline.showToast("🗑️ تم حذف الفيديو بنجاح وإعادة ضبط الاستوديو");
+  };
 
   // ========================================================
   // 1. REAL UPLOAD PROGRESS (XMLHttpRequest with % and MB)
@@ -140,6 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
           window.currentVideoId = data.video_id;
 
           if (videoEl && data.preview_url) {
+            player.hideEmptyState();
             videoEl.src = data.preview_url;
             videoEl.load();
             videoEl.play().catch(() => {});
@@ -422,16 +456,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function getSavedProjects() {
     try {
       const p = localStorage.getItem("videopro_saved_projects");
-      return p ? JSON.parse(p) : [
-        {
-          id: "sample",
-          name: "مشروع فيديو تجريبي (شاطئ وغروب)",
-          duration: "01:24",
-          resolution: "1920x1080",
-          size: "9.2 MB",
-          date: "اليوم",
-        }
-      ];
+      return p ? JSON.parse(p) : [];
     } catch {
       return [];
     }
@@ -455,6 +480,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const projects = getSavedProjects();
     listContainer.innerHTML = "";
+
+    if (projects.length === 0) {
+      listContainer.innerHTML = `
+        <div class="p-6 text-center text-gray-400 text-xs border border-dashed border-gray-800 rounded-xl">
+          لا توجد مشاريع محفوظة حتى الآن. قم برفع فيديو للبدء في مشروع جديد.
+        </div>
+      `;
+      return;
+    }
 
     projects.forEach((proj) => {
       const card = document.createElement("div");
@@ -485,7 +519,8 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.addEventListener("click", async () => {
         const projId = btn.dataset.id;
         window.currentVideoId = projId;
-        const targetUrl = (projId === "sample") ? "/static/assets/demo_video.mp4" : `/api/video/stream/${projId}`;
+        const targetUrl = `/api/video/stream/${projId}`;
+        player.hideEmptyState();
         if (videoEl) {
           videoEl.src = targetUrl;
           videoEl.load();
@@ -623,6 +658,48 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("execute-audio-btn")?.addEventListener("click", async () => {
+    if (!window.currentVideoId) {
+      timeline.showToast("⚠️ يرجى رفع فيديو أولاً لإضافة مقطع صوتي");
+      document.getElementById("audio-modal")?.classList.add("hidden");
+      document.getElementById("audio-modal")?.classList.remove("flex");
+      document.getElementById("video-file-input")?.click();
+      return;
+    }
+
+    const vidId = window.currentVideoId;
+    const preset = selectedAudioPreset;
+    const vVol = origVolSlider ? origVolSlider.value : "1.0";
+    const mVol = musicVolSlider ? musicVolSlider.value : "0.5";
+    const audioFile = customAudioFile;
+
+    if (window.tasksManager) {
+      window.tasksManager.runBackgroundTask({
+        type: "audio",
+        title: `مزج الموسيقى والخلفية الصوتية (${preset})`,
+        icon: "🎵",
+        dismissModalId: "audio-modal",
+        apiCall: async () => {
+          const formData = new FormData();
+          formData.append("video_id", vidId);
+          formData.append("preset", preset);
+          formData.append("video_volume", vVol);
+          formData.append("music_volume", mVol);
+          if (audioFile) {
+            formData.append("audio_file", audioFile);
+          }
+
+          const res = await fetch("/api/video/add-audio", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) throw new Error(data.error || "فشل مزج الصوت");
+          return data;
+        },
+      });
+      return;
+    }
+
     const statusText = document.getElementById("audio-status-text");
     const resultBox = document.getElementById("audio-result-box");
     const dlLink = document.getElementById("audio-download-link");
@@ -633,8 +710,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const formData = new FormData();
-      formData.append("video_id", window.currentVideoId || "sample");
-      formData.append("preset", selectedAudioPreset);
+      formData.append("video_id", vidId);
+      formData.append("preset", preset);
       formData.append("video_volume", origVolSlider ? origVolSlider.value : "1.0");
       formData.append("music_volume", musicVolSlider ? musicVolSlider.value : "0.5");
       if (customAudioFile) {
@@ -737,6 +814,42 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   document.getElementById("execute-merge-btn")?.addEventListener("click", async () => {
+    if (!window.currentVideoId) {
+      timeline.showToast("⚠️ يرجى رفع فيديو أولاً لدمج المقاطع");
+      document.getElementById("merge-modal")?.classList.add("hidden");
+      document.getElementById("merge-modal")?.classList.remove("flex");
+      document.getElementById("video-file-input")?.click();
+      return;
+    }
+
+    const vidId = window.currentVideoId;
+    const filesToMerge = [...extraMergeFiles];
+
+    if (window.tasksManager) {
+      window.tasksManager.runBackgroundTask({
+        type: "merge",
+        title: `دمج وتجميع ${filesToMerge.length + 1} مقاطع فيديو`,
+        icon: "🔀",
+        dismissModalId: "merge-modal",
+        apiCall: async () => {
+          const formData = new FormData();
+          formData.append("video_id", vidId);
+          filesToMerge.forEach((f) => {
+            formData.append("clip_files", f);
+          });
+
+          const res = await fetch("/api/video/merge", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) throw new Error(data.error || "فشل دمج المقاطع");
+          return data;
+        },
+      });
+      return;
+    }
+
     const statusText = document.getElementById("merge-status-text");
     const resultBox = document.getElementById("merge-result-box");
     const dlLink = document.getElementById("merge-download-link");
@@ -747,7 +860,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const formData = new FormData();
-      formData.append("video_id", window.currentVideoId || "sample");
+      formData.append("video_id", vidId);
       extraMergeFiles.forEach((f) => {
         formData.append("clip_files", f);
       });
@@ -883,6 +996,46 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("execute-text-btn")?.addEventListener("click", async () => {
+    if (!window.currentVideoId) {
+      timeline.showToast("⚠️ يرجى رفع فيديو أولاً لحرق النصوص");
+      document.getElementById("text-modal")?.classList.add("hidden");
+      document.getElementById("text-modal")?.classList.remove("flex");
+      document.getElementById("video-file-input")?.click();
+      return;
+    }
+
+    const vidId = window.currentVideoId;
+    const textVal = document.getElementById("overlay-text-input")?.value || "VideoPro Edit";
+    const fontSize = document.getElementById("overlay-size-slider")?.value || "36";
+    const fontColor = document.getElementById("overlay-color-picker")?.value || "yellow";
+    const position = document.getElementById("overlay-position-select")?.value || "bottom";
+
+    if (window.tasksManager) {
+      window.tasksManager.runBackgroundTask({
+        type: "text",
+        title: `حرق النص والشعار: "${textVal.slice(0, 16)}"`,
+        icon: "✍️",
+        dismissModalId: "text-modal",
+        apiCall: async () => {
+          const formData = new FormData();
+          formData.append("video_id", vidId);
+          formData.append("text", textVal);
+          formData.append("font_size", fontSize);
+          formData.append("font_color", fontColor);
+          formData.append("position", position);
+
+          const res = await fetch("/api/video/add-text", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) throw new Error(data.error || "فشل حرق النص");
+          return data;
+        },
+      });
+      return;
+    }
+
     const statusText = document.getElementById("text-status-text");
     const resultBox = document.getElementById("text-result-box");
     const dlLink = document.getElementById("text-download-link");
@@ -897,7 +1050,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const formData = new FormData();
-      formData.append("video_id", window.currentVideoId || "sample");
+      formData.append("video_id", vidId);
       formData.append("text", textInput?.value || "VideoPro Edit");
       formData.append("font_size", sizeSlider?.value || "36");
       formData.append("font_color", colorPicker?.value || "yellow");
@@ -955,8 +1108,51 @@ document.addEventListener("DOMContentLoaded", () => {
   const exportBtn = document.getElementById("export-video-btn");
   if (exportBtn) {
     exportBtn.addEventListener("click", async () => {
+      if (!window.currentVideoId) {
+        timeline.showToast("⚠️ يرجى رفع فيديو أولاً لتصديره");
+        document.getElementById("video-file-input")?.click();
+        return;
+      }
+
       const resolution = document.getElementById("export-quality-select")?.value || "1080p";
       const format = document.getElementById("export-format-select")?.value || "mp4";
+      const vidId = window.currentVideoId;
+
+      if (window.tasksManager) {
+        window.tasksManager.runBackgroundTask({
+          type: "export",
+          title: `تصدير الفيديو النهائي (${resolution.toUpperCase()} • ${format.toUpperCase()})`,
+          icon: "📦",
+          apiCall: async () => {
+            const formData = new FormData();
+            formData.append("video_id", vidId);
+            formData.append("resolution", resolution);
+            formData.append("format_type", format);
+            formData.append("brightness", (player.filters.brightness - 1.0).toFixed(2));
+            formData.append("contrast", player.filters.contrast.toFixed(2));
+            formData.append("saturation", player.filters.saturation.toFixed(2));
+
+            const res = await fetch("/api/video/export", {
+              method: "POST",
+              body: formData,
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) throw new Error(data.error || "فشل تصدير الفيديو");
+
+            // Auto-trigger file download for the user
+            if (data.url) {
+              const a = document.createElement("a");
+              a.href = data.url;
+              a.download = data.filename || `videopro_export_${resolution}.${format}`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+            }
+            return data;
+          },
+        });
+        return;
+      }
 
       const modal = document.getElementById("export-progress-modal");
       const detailsDisplay = document.getElementById("export-details-display");
@@ -1000,7 +1196,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         const formData = new FormData();
-        formData.append("video_id", window.currentVideoId || "sample");
+        formData.append("video_id", vidId);
         formData.append("resolution", resolution);
         formData.append("format_type", format);
         formData.append("brightness", (player.filters.brightness - 1.0).toFixed(2));

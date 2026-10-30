@@ -20,6 +20,13 @@ class SilenceRemover {
   }
 
   openModal() {
+    if (!window.currentVideoId) {
+      if (window.timelineInstance) {
+        window.timelineInstance.showToast("⚠️ يرجى رفع فيديو أولاً لاكتشاف وحذف الصمت");
+      }
+      document.getElementById("video-file-input")?.click();
+      return;
+    }
     if (!this.modal) return;
     this.modal.classList.remove("hidden");
     this.modal.classList.add("flex");
@@ -32,6 +39,41 @@ class SilenceRemover {
   }
 
   async executeSilenceRemoval() {
+    if (!window.currentVideoId) {
+      if (window.timelineInstance) window.timelineInstance.showToast("⚠️ يرجى رفع فيديو أولاً للبدء");
+      this.closeModal();
+      document.getElementById("video-file-input")?.click();
+      return;
+    }
+
+    const threshold = document.getElementById("silence-threshold-select")?.value || "-30";
+    const minDuration = document.getElementById("silence-duration-select")?.value || "0.4";
+    const vidId = window.currentVideoId;
+
+    if (window.tasksManager) {
+      window.tasksManager.runBackgroundTask({
+        type: "silence",
+        title: "حذف فترات الصمت التلقائي (Jump-Cut)",
+        icon: "🎙️",
+        dismissModalId: "silence-modal",
+        apiCall: async () => {
+          const formData = new FormData();
+          formData.append("video_id", vidId);
+          formData.append("noise_threshold_db", threshold);
+          formData.append("min_silence_duration", minDuration);
+
+          const resp = await fetch("/api/video/remove-silence", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await resp.json();
+          if (!resp.ok || data.error) throw new Error(data.error || "فشل حذف الصمت");
+          return data;
+        },
+      });
+      return;
+    }
+
     if (this.isProcessing) return;
     this.isProcessing = true;
 
@@ -45,11 +87,8 @@ class SilenceRemover {
     if (resultBox) resultBox.classList.add("hidden");
 
     try {
-      const threshold = document.getElementById("silence-threshold-select")?.value || "-30";
-      const minDuration = document.getElementById("silence-duration-select")?.value || "0.4";
-
       const formData = new FormData();
-      formData.append("video_id", window.currentVideoId || "sample");
+      formData.append("video_id", vidId);
       formData.append("noise_threshold_db", threshold);
       formData.append("min_silence_duration", minDuration);
 

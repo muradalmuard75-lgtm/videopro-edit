@@ -107,5 +107,14 @@ class TestVideoProSuite(unittest.TestCase):
         self.assertTrue(data.get("success"))
         self.assertIn("url", data)
 
+    def test_delete_video(self):
+        res = client.post("/api/video/delete", data={"video_id": "sample"})
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json().get("success"))
+
+        res_del = client.delete("/api/video/delete?video_id=non_existent_12345")
+        self.assertEqual(res_del.status_code, 200)
+        self.assertTrue(res_del.json().get("success"))
+
 if __name__ == "__main__":
     unittest.main()

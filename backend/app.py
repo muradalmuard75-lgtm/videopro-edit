@@ -430,6 +430,36 @@ async def download_export(filename: str):
     media_type = "audio/mpeg" if filename.endswith(".mp3") else "video/mp4"
     return FileResponse(file_path, filename=filename, media_type=media_type)
 
+@app.api_route("/api/video/delete", methods=["POST", "DELETE"])
+async def delete_video(
+    video_id: Optional[str] = Form(None),
+    vid_param: Optional[str] = Query(None, alias="video_id")
+):
+    """Delete video from server uploads if present."""
+    target_id = video_id or vid_param
+    if not target_id:
+        return {"success": True, "message": "No active video specified"}
+
+    if target_id in ("sample", "demo", "default"):
+        return {"success": True, "message": "Workspace reset successfully"}
+
+    deleted = False
+    candidates = [
+        os.path.join(UPLOADS_DIR, target_id),
+        os.path.join(UPLOADS_DIR, f"{target_id}.mp4"),
+        os.path.join(EXPORTS_DIR, target_id),
+        os.path.join(EXPORTS_DIR, f"{target_id}.mp4"),
+    ]
+    for p in candidates:
+        if os.path.exists(p) and os.path.isfile(p):
+            try:
+                os.remove(p)
+                deleted = True
+            except Exception:
+                pass
+
+    return {"success": True, "deleted": deleted, "message": "Video deleted successfully"}
+
 # Serve Frontend static assets
 if os.path.exists(FRONTEND_DIR):
     app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
