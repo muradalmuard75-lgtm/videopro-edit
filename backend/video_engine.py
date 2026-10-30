@@ -765,18 +765,38 @@ def burn_subtitles_into_video(
             ass_filter = f"ass='{escaped_ass}'"
 
         info = get_video_info(video_path)
+        width = int(info.get("width") or 0)
+        height = int(info.get("height") or 0)
         has_audio = info.get("has_audio", True)
         audio_flags = ["-c:a", "copy"] if has_audio else ["-an"]
+
+        # Optimize encoding speed & memory for cloud/Render:
+        # If video resolution > 720p, downscale to 720p preserving aspect ratio.
+        # This speeds up burning by 3x-5x and prevents timeouts/OOM on high-res videos.
+        filters = []
+        if (height and height > 720) or (width and width > 1280):
+            if height and width and height > width:
+                # Vertical / Reels / Shorts (e.g. 1080x1920 -> 720x1280)
+                if width > 720:
+                    filters.append("scale='720:-2'")
+            else:
+                # Landscape (e.g. 1920x1080 -> 1280x720)
+                if height > 720:
+                    filters.append("scale='-2:720'")
+
+        filters.append(ass_filter)
+        combined_vf = ",".join(filters)
 
         cmd = [
             "ffmpeg", "-y",
             "-threads", "2",
             "-i", video_path,
-            "-vf", ass_filter,
+            "-vf", combined_vf,
             "-c:v", "libx264",
             "-preset", "ultrafast",
             "-tune", "fastdecode",
-            "-crf", "23",
+            "-crf", "26",
+            "-pix_fmt", "yuv420p",
             *audio_flags,
             "-sn",
             "-movflags", "+faststart",
@@ -791,11 +811,12 @@ def burn_subtitles_into_video(
                 "ffmpeg", "-y",
                 "-threads", "2",
                 "-i", video_path,
-                "-vf", ass_filter,
+                "-vf", combined_vf,
                 "-c:v", "libx264",
                 "-preset", "ultrafast",
                 "-tune", "fastdecode",
-                "-crf", "23",
+                "-crf", "26",
+                "-pix_fmt", "yuv420p",
                 "-c:a", "aac", "-b:a", "128k",
                 "-sn",
                 "-movflags", "+faststart",

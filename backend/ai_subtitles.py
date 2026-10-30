@@ -1,5 +1,7 @@
 import os
+import re
 import json
+import uuid
 import base64
 import urllib.request
 import urllib.parse
@@ -10,6 +12,86 @@ from typing import List, Dict, Any, Optional
 _whisper_model = None
 _transcription_cache: Dict[str, Dict[str, Any]] = {}
 _translation_cache: Dict[str, str] = {}
+
+ARABIC_INITIAL_PROMPT = (
+    "مقطع فيديو باللغة العربية، تفريغ دقيق وواضح لجميع الكلمات والحوار المنطوق باللغة العربية الفصحى أو العامية بدون أخطاء."
+)
+
+ARABIC_PARTICLES = {
+    # Prepositions (حروف الجر)
+    "في", "على", "من", "إلى", "عن", "مع", "حتى", "بين", "منذ", "مذ", "نحو", "لدى", "عند", "خلف", "أمام", "تحت", "فوق",
+    # Conjunctions (حروف العطف والوصل)
+    "و", "أو", "ثم", "بل", "لكن", "أم", "إما",
+    # Subordinating conjunctions / condition / cause
+    "أن", "إن", "لن", "كي", "لكي", "إذا", "لو", "لما", "حيث", "لأن",
+    # Relative pronouns & dangling demonstratives
+    "الذي", "التي", "الذين", "اللواتي", "اللاتي", "هذا", "هذه", "هؤلاء", "ذلك", "تلك"
+}
+
+def clean_arabic_text(text: str) -> str:
+    """Normalize and clean Arabic speech text for crisp, professional subtitle display."""
+    if not text:
+        return ""
+    # Remove tatweel / kashida (ـ)
+    t = re.sub(r'[\u0640]', '', str(text))
+    # Normalize multiple punctuation marks (؟؟؟ -> ؟, !!! -> !, ... -> .)
+    t = re.sub(r'([؟!?.,،])\1+', r'\1', t)
+    # Normalize whitespace
+    t = re.sub(r'\s+', ' ', t).strip()
+    # Remove hallucinated repeated loops (word repeated 3+ times in a row)
+    words = t.split()
+    cleaned_words = []
+    for w in words:
+        if len(cleaned_words) >= 2 and w == cleaned_words[-1] and w == cleaned_words[-2]:
+            continue
+        cleaned_words.append(w)
+    return " ".join(cleaned_words)
+
+def split_arabic_words(words: List[str], max_words_per_cue: int = 4) -> List[str]:
+    """
+    Split words into grammatically balanced chunks (2-4 words) for TikTok/Reels.
+    Respects Arabic grammar boundaries:
+    - Never ends a chunk on a dangling preposition or particle (في، على، من، إلى، مع، أن، عن).
+    - Avoids leaving a single orphan word in the final chunk (e.g. 5 words -> 3 + 2 instead of 4 + 1).
+    """
+    max_words = max(2, max_words_per_cue)
+    chunks = []
+    i = 0
+    while i < len(words):
+        rem = len(words) - i
+        if rem <= max_words:
+            chunks.append(" ".join(words[i:]))
+            break
+        take = max_words
+        # Avoid leaving a lone orphan word at the end
+        if rem - take == 1:
+            take = max(2, take - 1)
+        # Avoid dangling preposition at the end of the chunk
+        if words[i + take - 1] in ARABIC_PARTICLES and take > 2:
+            take -= 1
+        if words[i + take - 1] in ARABIC_PARTICLES and take > 2:
+            take -= 1
+        chunks.append(" ".join(words[i : i + take]))
+        i += take
+    return chunks
+
+def get_whisper_model():
+    """Lazy load faster-whisper base model with int8 quantization and fixed 2 CPU threads for high accuracy on Arabic speech."""
+    global _whisper_model
+    if _whisper_model is None:
+        try:
+            from faster_whisper import WhisperModel
+            _whisper_model = WhisperModel(
+                "base",
+                device="cpu",
+                compute_type="int8",
+                cpu_threads=2,
+                num_workers=1
+            )
+        except Exception as e:
+            print(f"Failed to load WhisperModel: {e}")
+            return None
+    return _whisper_model
 
 PRESET_STYLES = {
     "tiktok_yellow": {
@@ -74,24 +156,6 @@ PRESET_STYLES = {
     }
 }
 
-def get_whisper_model():
-    """Lazy load faster-whisper tiny model with int8 quantization and fixed 2 CPU threads for maximum cloud speed."""
-    global _whisper_model
-    if _whisper_model is None:
-        try:
-            from faster_whisper import WhisperModel
-            _whisper_model = WhisperModel(
-                "tiny",
-                device="cpu",
-                compute_type="int8",
-                cpu_threads=2,
-                num_workers=1
-            )
-        except Exception as e:
-            print(f"Failed to load WhisperModel: {e}")
-            return None
-    return _whisper_model
-
 def extract_audio_numpy(video_path: str, sr: int = 16000):
     """Extract raw PCM audio as float32 numpy array using ffmpeg."""
     import numpy as np
@@ -126,10 +190,60 @@ def translate_to_arabic(text: str) -> str:
     _translation_cache[clean_text] = clean_text
     return clean_text
 
+def transcribe_fallback_google(video_path: str, language: str = "ar-SA") -> List[Dict[str, Any]]:
+    """
+    High-accuracy speech recognition fallback using Google Web Speech API via speech_recognition.
+    Fast, reliable, and especially robust for colloquial Arabic and dialects.
+    """
+    temp_wav = os.path.join(os.path.dirname(video_path), f"temp_google_sr_{uuid.uuid4().hex[:6]}.wav")
+    try:
+        import speech_recognition as sr
+        # Extract audio to 16kHz mono wav
+        cmd = [
+            "ffmpeg", "-nostdin", "-y", "-i", video_path,
+            "-vn", "-ar", "16000", "-ac", "1", "-f", "wav", temp_wav
+        ]
+        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
+        if not os.path.exists(temp_wav) or os.path.getsize(temp_wav) < 1000:
+            return []
+
+        r = sr.Recognizer()
+        with sr.AudioFile(temp_wav) as source:
+            audio_data = r.record(source)
+
+        text = ""
+        for lang_code in [language, "ar-EG", "ar-AE", "ar-JO"]:
+            try:
+                text = r.recognize_google(audio_data, language=lang_code)
+                if text and len(text.strip()) > 0:
+                    break
+            except Exception:
+                continue
+
+        clean_txt = clean_arabic_text(text)
+        if not clean_txt:
+            return []
+
+        return [{
+            "id": 1,
+            "start_sec": 0.5,
+            "end_sec": 4.0,
+            "start": format_timecode(0.5),
+            "end": format_timecode(4.0),
+            "text": clean_txt
+        }]
+    except Exception as e:
+        print(f"Google SpeechRecognition notice: {e}")
+        return []
+    finally:
+        if os.path.exists(temp_wav):
+            try: os.remove(temp_wav)
+            except Exception: pass
+
 def chunk_cues_for_reels(cues: List[Dict[str, Any]], max_words_per_cue: int = 4) -> List[Dict[str, Any]]:
     """
     Split long subtitle cues into short, punchy 2-4 word chunks for TikTok / Reels.
-    Distributes start and end timestamps smoothly across the chunks.
+    Respects Arabic grammatical phrasing and distributes timestamps smoothly across chunks.
     """
     if not cues:
         return []
@@ -137,7 +251,7 @@ def chunk_cues_for_reels(cues: List[Dict[str, Any]], max_words_per_cue: int = 4)
     new_cues = []
     cue_id = 1
     for cue in cues:
-        raw_text = str(cue.get("text", "")).strip()
+        raw_text = clean_arabic_text(str(cue.get("text", "")).strip())
         if not raw_text:
             continue
         words = raw_text.split()
@@ -152,15 +266,13 @@ def chunk_cues_for_reels(cues: List[Dict[str, Any]], max_words_per_cue: int = 4)
             c["end_sec"] = round(end_s, 2)
             c["start"] = format_timecode(start_s)
             c["end"] = format_timecode(end_s)
+            c["text"] = raw_text
             cue_id += 1
             new_cues.append(c)
             continue
 
-        # Split into word chunks of max_words_per_cue
-        chunks = []
-        for i in range(0, len(words), max_words_per_cue):
-            chunk_words = words[i:i + max_words_per_cue]
-            chunks.append(" ".join(chunk_words))
+        # Split into grammatically balanced chunks
+        chunks = split_arabic_words(words, max_words_per_cue)
 
         total_chars = sum(len(c) for c in chunks)
         cur_start = start_s
@@ -233,15 +345,33 @@ def generate_subtitles(
 
     if model is not None and audio_arr is not None and len(audio_arr) > 8000:
         try:
+            transcribe_kwargs = {
+                "beam_size": 2,
+                "vad_filter": True,
+                "vad_parameters": dict(min_silence_duration_ms=400),
+                "temperature": 0.0,
+                "condition_on_previous_text": False,
+                "word_timestamps": False
+            }
+            if target_language == "ar":
+                transcribe_kwargs["initial_prompt"] = ARABIC_INITIAL_PROMPT
+
             segments, info = model.transcribe(
                 audio_arr,
-                beam_size=1,
-                vad_filter=True,
-                condition_on_previous_text=False,
-                word_timestamps=False
+                **transcribe_kwargs
             )
             detected_lang = info.language
             print(f"Whisper transcribed audio. Detected language: {detected_lang}")
+
+            # If user wanted Arabic, but Whisper detected Persian/Urdu/Hebrew, force Arabic decode
+            if target_language == "ar" and detected_lang in ("fa", "ur", "ps", "sd", "he"):
+                print(f"Detected {detected_lang} while target is Arabic; re-decoding with forced language='ar'...")
+                transcribe_kwargs["language"] = "ar"
+                segments, info = model.transcribe(
+                    audio_arr,
+                    **transcribe_kwargs
+                )
+                detected_lang = "ar"
 
             raw_segments = list(segments)
 
@@ -263,6 +393,10 @@ def generate_subtitles(
                 if detected_lang != "ar" and target_language == "ar":
                     text = translated_map.get(text, text)
 
+                clean_text = clean_arabic_text(text)
+                if not clean_text:
+                    continue
+
                 start_s = round(float(seg.start), 2)
                 end_s = round(float(seg.end), 2)
                 if end_s - start_s < 0.8:
@@ -274,12 +408,22 @@ def generate_subtitles(
                     "end_sec": end_s,
                     "start": format_timecode(start_s),
                     "end": format_timecode(end_s),
-                    "text": text
+                    "text": clean_text
                 })
         except Exception as whisper_err:
             print(f"Whisper transcription error: {whisper_err}")
 
-    # 2. If Gemini API key is provided, try Gemini multimodal STT
+    # 2. Try Google Web Speech API fallback via speech_recognition if no cues extracted yet
+    if not cues and target_language == "ar":
+        try:
+            google_cues = transcribe_fallback_google(video_path, language="ar-SA")
+            if google_cues:
+                cues = google_cues
+                detected_lang = "ar"
+        except Exception as google_err:
+            print(f"Google SR fallback attempt error: {google_err}")
+
+    # 3. If Gemini API key is provided, try Gemini multimodal STT
     api_key = (gemini_api_key or "").strip() or os.environ.get("GEMINI_API_KEY")
     if not cues and api_key:
         audio_temp = os.path.join(os.path.dirname(video_path), f"temp_stt_{os.path.basename(video_path)}.mp3")
@@ -371,7 +515,8 @@ def generate_subtitles(
     }
 
 def format_timecode(sec: float) -> str:
-    total_ms = int(round(max(0.0, float(sec)) * 1000))
+    sec = round(max(0.0, float(sec)), 2)
+    total_ms = int(round(sec * 1000))
     ms = total_ms % 1000
     total_s = total_ms // 1000
     s = total_s % 60

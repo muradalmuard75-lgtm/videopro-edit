@@ -344,6 +344,7 @@ def api_burn_subtitles(
     result["url"] = f"/api/download/export/{out_name}"
     result["filename"] = out_name
     result["video_id"] = out_name
+    result["cues"] = cues
     return result
 
 @app.post("/api/video/auto-caption-and-burn")
