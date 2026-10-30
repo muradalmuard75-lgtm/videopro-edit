@@ -17,6 +17,9 @@ from video_engine import (
     auto_remove_silence,
     extract_video_highlights,
     export_final_video,
+    add_audio_to_video,
+    merge_video_clips,
+    add_text_to_video,
 )
 from ai_subtitles import generate_subtitles
 
@@ -260,6 +263,136 @@ async def export_video(
         brightness=brightness,
         contrast=contrast,
         saturation=saturation
+    )
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+
+    result["url"] = f"/api/download/export/{out_name}"
+    result["filename"] = out_name
+    return result
+
+@app.post("/api/video/add-audio")
+async def api_add_audio(
+    video_id: str = Form("sample"),
+    video_volume: float = Form(1.0),
+    music_volume: float = Form(0.5),
+    preset: str = Form("upbeat"),
+    audio_file: Optional[UploadFile] = File(None)
+):
+    """
+    Mix background audio/music with the video.
+    """
+    file_path = resolve_video_path(video_id)
+    audio_path = None
+
+    if audio_file and audio_file.filename:
+        audio_name = f"audio_{uuid.uuid4().hex[:8]}_{audio_file.filename}"
+        audio_path = os.path.join(UPLOADS_DIR, audio_name)
+        with open(audio_path, "wb") as f:
+            shutil.copyfileobj(audio_file.file, f)
+    else:
+        # Generate clean royalty-free harmonic audio track matching video duration
+        v_info = get_video_info(file_path)
+        dur = max(5.0, v_info.get("duration", 30.0))
+        audio_name = f"preset_{preset}_{uuid.uuid4().hex[:6]}.mp3"
+        audio_path = os.path.join(UPLOADS_DIR, audio_name)
+        
+        freq = 440 if preset == "upbeat" else 330 if preset == "calm" else 520
+        gen_cmd = [
+            "ffmpeg", "-y",
+            "-f", "lavfi", "-i", f"sine=frequency={freq}:duration={dur}",
+            "-c:a", "libmp3lame", "-b:a", "128k",
+            audio_path
+        ]
+        subprocess.run(gen_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    out_name = f"videopro_audio_{uuid.uuid4().hex[:6]}.mp4"
+    out_path = os.path.join(EXPORTS_DIR, out_name)
+
+    result = add_audio_to_video(
+        video_path=file_path,
+        audio_path=audio_path,
+        output_path=out_path,
+        video_vol=video_volume,
+        audio_vol=music_volume
+    )
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+
+    result["url"] = f"/api/download/export/{out_name}"
+    result["filename"] = out_name
+    return result
+
+@app.post("/api/video/merge")
+async def api_merge_clips(
+    video_id: str = Form("sample"),
+    extra_clips: Optional[str] = Form(None),
+    clip_files: Optional[List[UploadFile]] = File(None)
+):
+    """
+    Merge multiple video clips together into a single continuous video.
+    """
+    primary_path = resolve_video_path(video_id)
+    all_paths = [primary_path]
+
+    # Process extra uploaded files if provided
+    if clip_files:
+        for f in clip_files:
+            if f.filename:
+                extra_name = f"clip_{uuid.uuid4().hex[:6]}_{f.filename}"
+                extra_path = os.path.join(UPLOADS_DIR, extra_name)
+                with open(extra_path, "wb") as out_f:
+                    shutil.copyfileobj(f.file, out_f)
+                all_paths.append(extra_path)
+
+    # Process extra clip IDs if provided
+    if extra_clips:
+        ids = [cid.strip() for cid in extra_clips.split(",") if cid.strip()]
+        for cid in ids:
+            try:
+                p = resolve_video_path(cid)
+                if p not in all_paths:
+                    all_paths.append(p)
+            except Exception:
+                pass
+
+    # If only 1 video provided, duplicate it for a demonstration merge
+    if len(all_paths) == 1:
+        all_paths.append(primary_path)
+
+    out_name = f"videopro_merged_{uuid.uuid4().hex[:6]}.mp4"
+    out_path = os.path.join(EXPORTS_DIR, out_name)
+
+    result = merge_video_clips(all_paths, out_path)
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+
+    result["url"] = f"/api/download/export/{out_name}"
+    result["filename"] = out_name
+    return result
+
+@app.post("/api/video/add-text")
+async def api_add_text(
+    video_id: str = Form("sample"),
+    text: str = Form("VideoPro Edit"),
+    font_size: int = Form(36),
+    font_color: str = Form("yellow"),
+    position: str = Form("bottom")
+):
+    """
+    Burn custom text or sticker onto the video.
+    """
+    file_path = resolve_video_path(video_id)
+    out_name = f"videopro_text_{uuid.uuid4().hex[:6]}.mp4"
+    out_path = os.path.join(EXPORTS_DIR, out_name)
+
+    result = add_text_to_video(
+        video_path=file_path,
+        output_path=out_path,
+        text=text,
+        font_size=font_size,
+        font_color=font_color,
+        position=position
     )
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])

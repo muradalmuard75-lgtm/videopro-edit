@@ -492,3 +492,175 @@ def export_final_video(
         "format": format_type,
         "size_mb": round(os.path.getsize(output_path) / (1024 * 1024), 2)
     }
+
+def add_audio_to_video(
+    video_path: str,
+    audio_path: str,
+    output_path: str,
+    video_vol: float = 1.0,
+    audio_vol: float = 0.5
+) -> Dict[str, Any]:
+    """
+    Mix background music or sound with the video's original audio.
+    """
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    v_info = get_video_info(video_path)
+    has_audio = v_info.get("has_audio", False)
+    duration = v_info.get("duration", 0.0)
+
+    if has_audio:
+        filter_complex = f"[0:a]volume={video_vol}[a0];[1:a]volume={audio_vol}[a1];[a0][a1]amix=inputs=2:duration=first[aout]"
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", video_path,
+            "-i", audio_path,
+            "-filter_complex", filter_complex,
+            "-map", "0:v",
+            "-map", "[aout]",
+            "-c:v", "copy",
+            "-c:a", "aac", "-b:a", "192k",
+            "-shortest",
+            "-movflags", "+faststart",
+            output_path
+        ]
+    else:
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", video_path,
+            "-i", audio_path,
+            "-filter:a", f"volume={audio_vol}",
+            "-c:v", "copy",
+            "-c:a", "aac", "-b:a", "192k",
+            "-shortest",
+            "-movflags", "+faststart",
+            output_path
+        ]
+
+    res = run_command(cmd)
+    if res.returncode != 0:
+        return {"error": f"Audio merge failed: {res.stderr}"}
+
+    out_info = get_video_info(output_path)
+    return {
+        "success": True,
+        "output_path": output_path,
+        "duration": out_info.get("duration", duration),
+        "size_mb": out_info.get("size_mb", 0.0)
+    }
+
+def merge_video_clips(
+    file_paths: List[str],
+    output_path: str
+) -> Dict[str, Any]:
+    """
+    Concatenate multiple video clips into a single video file.
+    Scales all inputs to 1920x1080 with 16:9 letterbox for consistent encoding.
+    """
+    if not file_paths:
+        return {"error": "No clips provided"}
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    inputs = []
+    filter_parts = []
+    concat_inputs = []
+
+    for idx, path in enumerate(file_paths):
+        inputs.extend(["-i", path])
+        # Scale and pad to standard 1080p, and ensure audio stream exists
+        filter_parts.append(
+            f"[{idx}:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30[v{idx}];"
+        )
+        concat_inputs.append(f"[v{idx}][{idx}:a]")
+
+    n = len(file_paths)
+    concat_filter = "".join(filter_parts) + "".join(concat_inputs) + f"concat=n={n}:v=1:a=1[outv][outa]"
+
+    cmd = [
+        "ffmpeg", "-y",
+        *inputs,
+        "-filter_complex", concat_filter,
+        "-map", "[outv]",
+        "-map", "[outa]",
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+        "-c:a", "aac", "-b:a", "128k",
+        "-movflags", "+faststart",
+        output_path
+    ]
+
+    res = run_command(cmd)
+    if res.returncode != 0:
+        # Fallback if some clips have no audio stream
+        v_filter = "".join(filter_parts) + "".join([f"[v{i}]" for i in range(n)]) + f"concat=n={n}:v=1:a=0[outv]"
+        cmd_fallback = [
+            "ffmpeg", "-y",
+            *inputs,
+            "-filter_complex", v_filter,
+            "-map", "[outv]",
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+            "-movflags", "+faststart",
+            output_path
+        ]
+        res_fb = run_command(cmd_fallback)
+        if res_fb.returncode != 0:
+            return {"error": f"Merge failed: {res.stderr}"}
+
+    out_info = get_video_info(output_path)
+    return {
+        "success": True,
+        "output_path": output_path,
+        "total_clips": len(file_paths),
+        "duration": out_info.get("duration", 0.0),
+        "size_mb": out_info.get("size_mb", 0.0)
+    }
+
+def add_text_to_video(
+    video_path: str,
+    output_path: str,
+    text: str,
+    font_size: int = 36,
+    font_color: str = "white",
+    position: str = "bottom",
+    box_color: str = "black@0.6"
+) -> Dict[str, Any]:
+    """
+    Burn custom text or sticker onto the video.
+    """
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    # Position calculation
+    if position == "top":
+        y_pos = "h*0.1"
+    elif position == "center":
+        y_pos = "(h-text_h)/2"
+    else: # bottom
+        y_pos = "h*0.82"
+
+    # Escape text for drawtext
+    escaped_text = text.replace(":", "\\:").replace("'", "\\'").replace("%", "\\%")
+
+    vf = f"drawtext=text='{escaped_text}':fontsize={font_size}:fontcolor={font_color}:box=1:boxcolor={box_color}:boxborderw=10:x=(w-text_w)/2:y={y_pos}"
+
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", video_path,
+        "-vf", vf,
+        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "22",
+        "-c:a", "copy",
+        "-movflags", "+faststart",
+        output_path
+    ]
+
+    res = run_command(cmd)
+    if res.returncode != 0:
+        return {"error": f"Text overlay failed: {res.stderr}"}
+
+    out_info = get_video_info(output_path)
+    return {
+        "success": True,
+        "output_path": output_path,
+        "text": text,
+        "duration": out_info.get("duration", 0.0),
+        "size_mb": out_info.get("size_mb", 0.0)
+    }
+

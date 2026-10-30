@@ -55,7 +55,7 @@
   <!-- TOP NAVIGATION BAR -->
   <header class="w-full h-14 sm:h-16 border-b border-[#1b2333] bg-[#0f1420]/95 backdrop-blur-md px-3 sm:px-6 flex items-center justify-between z-30 sticky top-0">
     <!-- Right side: Logo & Brand -->
-    <div class="flex items-center gap-2 sm:gap-3">
+    <button id="brand-logo-btn" class="flex items-center gap-2 sm:gap-3 text-right hover:opacity-90 transition cursor-pointer bg-transparent border-0 p-0">
       <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-purple-600/30 shrink-0">
         <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white fill-current ml-0.5" viewBox="0 0 24 24">
           <path d="M8 5v14l11-7z"/>
@@ -68,29 +68,33 @@
         </div>
         <span class="hidden sm:block text-[10px] text-gray-400 font-medium -mt-1 tracking-wider">حرر .. أضف .. أبدع</span>
       </div>
-    </div>
+    </button>
 
     <!-- Center: Main Nav Links (Desktop) -->
     <nav class="hidden lg:flex items-center gap-2">
-      <a href="#" class="flex items-center gap-2 px-5 py-2 rounded-full bg-purple-600 text-white font-bold text-sm shadow-md shadow-purple-600/20 transition">
+      <button id="nav-home-btn" class="flex items-center gap-2 px-5 py-2 rounded-full bg-purple-600 text-white font-bold text-sm shadow-md shadow-purple-600/20 transition hover:bg-purple-500 cursor-pointer border-0">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
         الرئيسية
-      </a>
-      <a href="#projects" class="px-4 py-2 text-gray-300 hover:text-white font-medium text-sm transition">مشاريعي</a>
-      <a href="#pricing" class="px-4 py-2 text-gray-300 hover:text-white font-medium text-sm transition">الأسعار</a>
-      <a href="#help" class="flex items-center gap-1.5 px-4 py-2 text-gray-300 hover:text-white font-medium text-sm transition">
+      </button>
+      <button id="nav-projects-btn" class="px-4 py-2 text-gray-300 hover:text-white font-medium text-sm transition rounded-lg hover:bg-gray-800/60 cursor-pointer border-0 bg-transparent">
+        مشاريعي
+      </button>
+      <button id="nav-pricing-btn" class="px-4 py-2 text-gray-300 hover:text-white font-medium text-sm transition rounded-lg hover:bg-gray-800/60 cursor-pointer border-0 bg-transparent">
+        الأسعار
+      </button>
+      <button id="nav-help-btn" class="flex items-center gap-1.5 px-4 py-2 text-gray-300 hover:text-white font-medium text-sm transition rounded-lg hover:bg-gray-800/60 cursor-pointer border-0 bg-transparent">
         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         المساعدة
-      </a>
+      </button>
     </nav>
 
     <!-- Left side: Login & User Profile -->
     <div class="flex items-center gap-2 sm:gap-3">
-      <button class="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-lg bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-bold text-xs shadow-md transition">
-        <span>تسجيل الدخول</span>
+      <button id="nav-login-btn" class="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-lg bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-bold text-xs shadow-md transition cursor-pointer">
+        <span id="nav-login-text">تسجيل الدخول</span>
         <svg class="w-3.5 h-3.5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
       </button>
-      <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-400 cursor-pointer hover:border-purple-500 transition shrink-0">
+      <div id="nav-user-avatar" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-400 cursor-pointer hover:border-purple-500 hover:text-white transition shrink-0" title="الملف الشخصي">
         <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
       </div>
     </div>
@@ -112,42 +116,55 @@
           متصفحك لا يدعم تشغيل الفيديو.
         </video>
 
-        <!-- 1080p HD Badge (Top-Left) -->
-        <div class="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-white font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow">
+        <!-- 1080p HD Badge (Top-Left, Clickable for tech specs) -->
+        <button id="player-quality-badge" class="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-md bg-black/60 hover:bg-black/85 backdrop-blur-md border border-white/10 hover:border-purple-400 text-white font-bold text-[10px] sm:text-xs flex items-center gap-1.5 shadow transition cursor-pointer" title="عرض مواصفات الفيديو وجودة العرض">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          1080p HD
-        </div>
+          <span id="player-badge-text">1080p HD</span>
+        </button>
 
         <!-- Floating Upload Button (Top-Right) -->
-        <button id="upload-trigger-btn" class="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/20 text-[11px] sm:text-xs font-semibold text-gray-200 transition shadow">
+        <button id="upload-trigger-btn" class="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 hover:bg-purple-900/80 backdrop-blur-md border border-white/20 hover:border-purple-400 text-[11px] sm:text-xs font-semibold text-gray-200 hover:text-white transition shadow cursor-pointer">
           <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
           <span>رفع فيديو</span>
         </button>
 
         <!-- Center Big Play Button -->
-        <button id="center-play-btn" class="absolute z-20 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition-all duration-300 transform group-hover:scale-110 shadow-2xl">
+        <button id="center-play-btn" class="absolute z-20 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition-all duration-300 transform group-hover:scale-110 shadow-2xl cursor-pointer">
           <svg class="w-6 h-6 sm:w-7 sm:h-7 text-white fill-current ml-1" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         </button>
 
         <!-- Subtitles Overlay for Live Preview -->
-        <div id="player-subtitles-overlay" class="absolute bottom-10 sm:bottom-12 left-1/2 -translate-x-1/2 px-3 py-1 rounded-lg bg-black/75 backdrop-blur-sm text-yellow-300 font-bold text-center pointer-events-none transition-all z-20 hidden text-xs sm:text-base max-w-[90%]"></div>
+        <div id="player-subtitles-overlay" class="absolute bottom-12 sm:bottom-14 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg bg-black/80 backdrop-blur-sm text-yellow-300 font-bold text-center pointer-events-none transition-all z-20 hidden text-xs sm:text-base max-w-[90%] shadow-lg"></div>
 
         <!-- Hidden File Input for Video Upload -->
         <input type="file" id="video-file-input" accept="video/*" class="hidden">
 
         <!-- Bottom In-Player Controls Overlay -->
-        <div class="absolute bottom-0 inset-x-0 h-10 sm:h-11 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 sm:px-4 flex items-center justify-between z-20 text-white text-xs">
+        <div class="absolute bottom-0 inset-x-0 h-10 sm:h-11 bg-gradient-to-t from-black/95 via-black/60 to-transparent px-3 sm:px-4 flex items-center justify-between z-20 text-white text-xs">
           <!-- Time indicator -->
           <div class="flex items-center gap-2">
             <span id="player-time-display" class="font-mono text-gray-200 text-[11px] sm:text-xs tracking-wider">00:00 / 01:24</span>
           </div>
 
           <!-- Quick Right Controls -->
-          <div class="flex items-center gap-2.5 sm:gap-3">
-            <button id="player-volume-btn" class="text-gray-300 hover:text-white transition p-1">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+          <div class="flex items-center gap-2 sm:gap-2.5 relative">
+            <!-- Volume Slider Popover -->
+            <div id="player-volume-container" class="relative flex items-center group/vol">
+              <button id="player-volume-btn" class="text-gray-300 hover:text-white transition p-1 cursor-pointer" title="كتم / تفعيل الصوت">
+                <svg id="volume-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+              </button>
+              <div id="volume-slider-box" class="hidden group-hover/vol:flex items-center bg-black/80 backdrop-blur-md px-2 py-1 rounded-lg border border-gray-700 absolute bottom-8 left-0 z-30 shadow-xl">
+                <input type="range" id="player-volume-slider" min="0" max="1" step="0.05" value="1" class="w-20 h-1 accent-purple-500 cursor-pointer">
+              </div>
+            </div>
+
+            <!-- Settings Gear Button -->
+            <button id="player-settings-btn" class="text-gray-300 hover:text-white transition p-1 cursor-pointer" title="إعدادات التشغيل والسرعة">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             </button>
-            <button id="player-fullscreen-btn" class="text-gray-300 hover:text-white transition p-1">
+
+            <!-- Fullscreen Button -->
+            <button id="player-fullscreen-btn" class="text-gray-300 hover:text-white transition p-1 cursor-pointer" title="شاشة كاملة">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
             </button>
           </div>
@@ -164,46 +181,50 @@
         
         <!-- Left: Editing tools (Undo, Redo, Cut, Delete, Timecode) -->
         <div class="flex items-center gap-1.5 sm:gap-2.5">
-          <button id="timeline-undo-btn" class="p-1 sm:p-1.5 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition" title="تراجع">
+          <button id="timeline-undo-btn" class="p-1 sm:p-1.5 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition cursor-pointer" title="تراجع (Ctrl+Z)">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
           </button>
-          <button id="timeline-redo-btn" class="p-1 sm:p-1.5 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition" title="إعادة">
+          <button id="timeline-redo-btn" class="p-1 sm:p-1.5 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition cursor-pointer" title="إعادة (Ctrl+Y)">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"/></svg>
           </button>
-          <button id="timeline-cut-btn" class="p-1 sm:p-1.5 rounded hover:bg-purple-900/40 text-purple-400 hover:text-purple-300 transition" title="تقطيع الفيديو">
+          <button id="timeline-cut-btn" class="p-1 sm:p-1.5 rounded hover:bg-purple-900/40 text-purple-400 hover:text-purple-300 transition cursor-pointer" title="قص الفيديو عند موضع المؤشر">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L12 12m0 0l-2.879-2.879a3 3 0 114.242-4.242L12 12z"/></svg>
           </button>
-          <button id="timeline-delete-btn" class="p-1 sm:p-1.5 rounded hover:bg-gray-800 text-gray-400 hover:text-red-400 transition" title="حذف">
+          <button id="timeline-delete-btn" class="p-1 sm:p-1.5 rounded hover:bg-red-950/40 text-gray-400 hover:text-red-400 transition cursor-pointer" title="حذف الجزء المحدد أو إعادة ضبط التقطيع">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
 
-          <!-- Timecode Box -->
-          <div class="px-2 sm:px-3 py-1 rounded bg-[#131926] border border-gray-700 text-purple-300 font-mono text-[11px] sm:text-xs font-bold tracking-wider select-none shrink-0" id="timecode-display">
+          <!-- Timecode Box (Click to jump) -->
+          <div id="timecode-display" class="px-2 sm:px-3 py-1 rounded bg-[#131926] hover:bg-[#1c2438] border border-gray-700 hover:border-purple-400 text-purple-300 font-mono text-[11px] sm:text-xs font-bold tracking-wider select-none shrink-0 cursor-pointer transition" title="انقر لتحديد توقيت محدد في الفيديو">
             00:00:15.00
           </div>
         </div>
 
         <!-- Center: Playback Transport Buttons -->
         <div class="flex items-center gap-2 sm:gap-3">
-          <button id="timeline-step-back" class="p-1.5 rounded-full hover:bg-gray-800 text-gray-300 hover:text-white transition">
+          <button id="timeline-step-back" class="p-1.5 rounded-full hover:bg-gray-800 text-gray-300 hover:text-white transition cursor-pointer" title="تأخير ثانية واحدة (J)">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
           </button>
 
           <!-- Circular Play/Pause Purple Button -->
-          <button id="timeline-play-btn" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-purple-600/30 transition transform hover:scale-105 active:scale-95">
+          <button id="timeline-play-btn" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-purple-600/30 transition transform hover:scale-105 active:scale-95 cursor-pointer" title="تشغيل / إيقاف (مسافة)">
             <svg class="w-4 h-4 fill-current ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
           </button>
 
-          <button id="timeline-step-forward" class="p-1.5 rounded-full hover:bg-gray-800 text-gray-300 hover:text-white transition">
+          <button id="timeline-step-forward" class="p-1.5 rounded-full hover:bg-gray-800 text-gray-300 hover:text-white transition cursor-pointer" title="تقديم ثانية واحدة (L)">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
           </button>
         </div>
 
-        <!-- Right: Zoom Controls -->
-        <div class="hidden sm:flex items-center gap-2 text-gray-400">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"/></svg>
-          <input type="range" id="timeline-zoom-slider" min="0.5" max="2.5" step="0.1" value="1.0" class="w-16 sm:w-20 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"/></svg>
+        <!-- Right: Zoom Controls with +/- buttons -->
+        <div class="hidden sm:flex items-center gap-1.5 text-gray-400">
+          <button id="zoom-out-btn" class="p-1 hover:text-white transition cursor-pointer rounded hover:bg-gray-800" title="تصغير التايم لاين">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"/></svg>
+          </button>
+          <input type="range" id="timeline-zoom-slider" min="0.5" max="2.5" step="0.1" value="1.0" class="w-16 sm:w-20 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500" title="التحكم في تكبير التايم لاين">
+          <button id="zoom-in-btn" class="p-1 hover:text-white transition cursor-pointer rounded hover:bg-gray-800" title="تكبير التايم لاين">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"/></svg>
+          </button>
         </div>
 
       </div>
@@ -261,26 +282,35 @@
 
     </section>
 
-    <!-- 3. MOBILE QUICK TOOLS CAROUSEL (Mobile only: Horizontal scroll bar) -->
+    <!-- 3. MOBILE QUICK TOOLS CAROUSEL (Mobile only: Horizontal scroll bar with all 9 tools) -->
     <div class="order-3 lg:hidden w-full overflow-x-auto py-1 scrollbar-none">
       <div class="flex items-center gap-2 min-w-max px-1">
-        <button onclick="document.getElementById('tool-split-btn').click()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-600/30 border border-purple-500/60 text-purple-300 text-xs font-bold shrink-0">
+        <button id="quick-split-btn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-600/30 border border-purple-500/60 text-purple-300 text-xs font-bold shrink-0 cursor-pointer hover:bg-purple-600/50 transition">
           <span>✂️ تقطيع الفيديو</span>
         </button>
-        <button onclick="document.getElementById('tool-reframe-btn').click()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-pink-600/20 border border-pink-500/40 text-pink-300 text-xs font-bold shrink-0">
-          <span>📱 مقاس 9:16</span>
-        </button>
-        <button onclick="document.getElementById('tool-silence-btn').click()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold shrink-0">
-          <span>🎙️ حذف الصمت</span>
-        </button>
-        <button onclick="document.getElementById('tool-highlights-btn').click()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-600/20 border border-amber-500/40 text-amber-300 text-xs font-bold shrink-0">
-          <span>🎯 أفضل اللقطات</span>
-        </button>
-        <button onclick="document.getElementById('tool-subtitles-btn').click()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-300 text-xs font-bold shrink-0">
+        <button id="quick-subtitles-btn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-300 text-xs font-bold shrink-0 cursor-pointer hover:bg-blue-600/40 transition">
           <span>📝 ترجمة فورية</span>
         </button>
-        <button onclick="document.getElementById('tool-enhance-btn').click()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-orange-600/20 border border-orange-500/40 text-orange-300 text-xs font-bold shrink-0">
+        <button id="quick-reframe-btn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-pink-600/20 border border-pink-500/40 text-pink-300 text-xs font-bold shrink-0 cursor-pointer hover:bg-pink-600/40 transition">
+          <span>📱 مقاس 9:16</span>
+        </button>
+        <button id="quick-silence-btn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold shrink-0 cursor-pointer hover:bg-emerald-600/40 transition">
+          <span>🎙️ حذف الصمت</span>
+        </button>
+        <button id="quick-highlights-btn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-600/20 border border-amber-500/40 text-amber-300 text-xs font-bold shrink-0 cursor-pointer hover:bg-amber-600/40 transition">
+          <span>🎯 أفضل اللقطات</span>
+        </button>
+        <button id="quick-audio-btn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-teal-600/20 border border-teal-500/40 text-teal-300 text-xs font-bold shrink-0 cursor-pointer hover:bg-teal-600/40 transition">
+          <span>🎵 صوت وموسيقى</span>
+        </button>
+        <button id="quick-merge-btn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600/20 border border-indigo-500/40 text-indigo-300 text-xs font-bold shrink-0 cursor-pointer hover:bg-indigo-600/40 transition">
+          <span>🔀 دمج المقاطع</span>
+        </button>
+        <button id="quick-enhance-btn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-orange-600/20 border border-orange-500/40 text-orange-300 text-xs font-bold shrink-0 cursor-pointer hover:bg-orange-600/40 transition">
           <span>🎨 الألوان والسطوع</span>
+        </button>
+        <button id="quick-text-btn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-fuchsia-600/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs font-bold shrink-0 cursor-pointer hover:bg-fuchsia-600/40 transition">
+          <span>✍️ نصوص وملصقات</span>
         </button>
       </div>
     </div>
@@ -293,7 +323,7 @@
         <div class="flex items-center justify-between pb-2 border-b border-gray-800">
           <div class="flex items-center gap-2">
             <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            <h2 class="font-bold text-xs sm:text-sm text-gray-200">الأدوات المتاحة</h2>
+            <h2 class="font-bold text-xs sm:text-sm text-gray-200">الأدوات المتاحة (9 أدوات)</h2>
           </div>
           <span class="text-[10px] bg-purple-900/40 text-purple-300 border border-purple-700/40 px-2 py-0.5 rounded-full font-semibold">Pro Suite</span>
         </div>
@@ -305,7 +335,7 @@
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L12 12m0 0l-2.879-2.879a3 3 0 114.242-4.242L12 12z"/></svg>
             </div>
             <div class="text-right">
-              <div class="font-bold text-xs text-white">تقطيع الفيديو الذكي</div>
+              <div class="font-bold text-xs text-white">١. تقطيع الفيديو الذكي</div>
               <div class="text-[10px] text-gray-400 mt-0.5">تقطيع كل ٣٠ ثانية أو دقيقة وتنزيل ZIP</div>
             </div>
           </div>
@@ -319,7 +349,7 @@
               <span class="font-black text-xs border border-blue-400/50 rounded px-1">CC</span>
             </div>
             <div class="text-right">
-              <div class="font-bold text-xs text-gray-200">إضافة ترجمة تلقائية</div>
+              <div class="font-bold text-xs text-gray-200">٢. إضافة ترجمة تلقائية</div>
               <div class="text-[10px] text-gray-400 mt-0.5">تحويل الصوت لنص وتعديل الخطوط</div>
             </div>
           </div>
@@ -333,7 +363,7 @@
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
             </div>
             <div class="text-right">
-              <div class="font-bold text-xs text-gray-200">تحويل المقاس والكادر</div>
+              <div class="font-bold text-xs text-gray-200">٣. تحويل المقاس والكادر</div>
               <div class="text-[10px] text-gray-400 mt-0.5">تحويل إلى 9:16 و 16:9 مع بلور ذكي</div>
             </div>
           </div>
@@ -347,7 +377,7 @@
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>
             </div>
             <div class="text-right">
-              <div class="font-bold text-xs text-gray-200">حذف الصمت تلقائياً</div>
+              <div class="font-bold text-xs text-gray-200">٤. حذف الصمت تلقائياً</div>
               <div class="text-[10px] text-gray-400 mt-0.5">اكتشاف فترات التوقف وعمل Jump-Cut</div>
             </div>
           </div>
@@ -361,7 +391,7 @@
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
             </div>
             <div class="text-right">
-              <div class="font-bold text-xs text-gray-200">استخراج أفضل اللقطات</div>
+              <div class="font-bold text-xs text-gray-200">٥. استخراج أفضل اللقطات</div>
               <div class="text-[10px] text-gray-400 mt-0.5">تحليل أهم المشاهد وتحويلها إلى Shorts</div>
             </div>
           </div>
@@ -375,23 +405,53 @@
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
             </div>
             <div class="text-right">
-              <div class="font-bold text-xs text-gray-200">إضافة صوت وموسيقى</div>
+              <div class="font-bold text-xs text-gray-200">٦. إضافة صوت وموسيقى</div>
               <div class="text-[10px] text-gray-400 mt-0.5">دمج صوتيات ومؤثرات خلفية</div>
             </div>
           </div>
+          <span class="text-[10px] bg-teal-900/40 text-teal-300 px-1.5 py-0.5 rounded">صوت</span>
         </button>
 
-        <!-- Tool 7: تحسين الفيديو والألوان -->
+        <!-- Tool 7: دمج المقاطع وتجميعها -->
+        <button id="tool-merge-btn" class="tool-btn group">
+          <div class="flex items-center gap-2.5 sm:gap-3">
+            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center group-hover:scale-105 transition shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+            </div>
+            <div class="text-right">
+              <div class="font-bold text-xs text-gray-200">٧. دمج المقاطع وتجميعها</div>
+              <div class="text-[10px] text-gray-400 mt-0.5">تجميع فيديوهات متعددة في فيديو واحد</div>
+            </div>
+          </div>
+          <span class="text-[10px] bg-indigo-900/40 text-indigo-300 px-1.5 py-0.5 rounded">دمج</span>
+        </button>
+
+        <!-- Tool 8: تحسين الفيديو والألوان -->
         <button id="tool-enhance-btn" class="tool-btn group">
           <div class="flex items-center gap-2.5 sm:gap-3">
             <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-orange-600/20 text-orange-400 flex items-center justify-center group-hover:scale-105 transition shrink-0">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
             </div>
             <div class="text-right">
-              <div class="font-bold text-xs text-gray-200">تحسين الفيديو</div>
-              <div class="text-[10px] text-gray-400 mt-0.5">السطوع - الألوان - الجودة والحدة</div>
+              <div class="font-bold text-xs text-gray-200">٨. تحسين الفيديو والألوان</div>
+              <div class="text-[10px] text-gray-400 mt-0.5">السطوع - الألوان - فلاتر سينمائية</div>
             </div>
           </div>
+          <span class="text-[10px] bg-orange-900/40 text-orange-300 px-1.5 py-0.5 rounded">ألوان</span>
+        </button>
+
+        <!-- Tool 9: إضافة نصوص وملصقات -->
+        <button id="tool-text-btn" class="tool-btn group">
+          <div class="flex items-center gap-2.5 sm:gap-3">
+            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-fuchsia-600/20 text-fuchsia-400 flex items-center justify-center group-hover:scale-105 transition shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            </div>
+            <div class="text-right">
+              <div class="font-bold text-xs text-gray-200">٩. إضافة نصوص وملصقات</div>
+              <div class="text-[10px] text-gray-400 mt-0.5">كتابة نصوص وشعارات وملصقات ترند</div>
+            </div>
+          </div>
+          <span class="text-[10px] bg-fuchsia-900/40 text-fuchsia-300 px-1.5 py-0.5 rounded">نص</span>
         </button>
 
       </div>
@@ -796,6 +856,689 @@
       </button>
     </div>
   </div>
+
+  <!-- 7. UPLOAD PROGRESS MODAL (Real percentage % and size MB/MB with cancel) -->
+  <div id="upload-progress-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-4">
+    <div class="glass-panel w-full max-w-md p-5 sm:p-6 modal-enter border border-purple-500/50 glow-purple flex flex-col gap-4">
+      <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-purple-600/30 text-purple-400 flex items-center justify-center">
+            <svg class="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm sm:text-base text-white">رفع ومعالجة الفيديو</h3>
+            <p id="upload-filename-display" class="text-xs text-gray-400 truncate max-w-[200px] sm:max-w-[240px]">video.mp4</p>
+          </div>
+        </div>
+        <span id="upload-percentage-badge" class="px-2.5 py-1 rounded-full bg-purple-900/60 text-purple-300 font-mono font-bold text-xs border border-purple-500/40">0%</span>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="flex flex-col gap-1.5">
+        <div class="w-full h-3 bg-gray-900 rounded-full overflow-hidden border border-gray-800 p-0.5">
+          <div id="upload-progress-bar" class="h-full bg-gradient-to-r from-purple-600 via-indigo-500 to-pink-500 rounded-full w-0 transition-all duration-150"></div>
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-gray-400 font-mono">
+          <span id="upload-size-display">0.0 MB / 0.0 MB</span>
+          <span id="upload-speed-display">0.0 MB/s</span>
+        </div>
+      </div>
+
+      <!-- Status message -->
+      <div class="flex items-center gap-2 p-2.5 rounded-lg bg-black/40 border border-gray-800 text-xs text-purple-300">
+        <svg id="upload-status-spinner" class="w-4 h-4 animate-spin text-purple-400 shrink-0" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+        <span id="upload-status-text" class="truncate font-medium">جاري رفع الفيديو إلى الخادم...</span>
+      </div>
+
+      <!-- Cancel button -->
+      <div class="flex items-center justify-end gap-2 pt-1">
+        <button id="cancel-upload-btn" class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-red-900/40 text-gray-300 hover:text-red-300 border border-gray-700 text-xs font-bold transition cursor-pointer">
+          إلغاء الرفع
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. PROJECTS MODAL (مشاريعي) -->
+  <div id="projects-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-3 sm:p-4">
+    <div class="glass-panel w-full max-w-xl p-5 sm:p-6 modal-enter border border-purple-500/40 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-purple-600/30 text-purple-400 flex items-center justify-center font-bold">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm sm:text-base text-white">مشاريعي المحفوظة</h3>
+            <p class="text-xs text-gray-400">إدارة وفتح مسودات الفيديو الخاصة بك</p>
+          </div>
+        </div>
+        <button id="close-projects-modal" class="text-gray-400 hover:text-white transition cursor-pointer p-1">✕</button>
+      </div>
+
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-gray-400">المشاريع الأخيرة:</span>
+        <button id="create-new-project-btn" class="px-3 py-1.5 rounded-lg btn-primary text-xs font-bold shadow cursor-pointer">
+          + مشروع جديد
+        </button>
+      </div>
+
+      <div id="projects-list-container" class="flex flex-col gap-2 max-h-72 overflow-y-auto">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. PRICING MODAL (الأسعار) -->
+  <div id="pricing-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-3 sm:p-4">
+    <div class="glass-panel w-full max-w-3xl p-5 sm:p-6 modal-enter border border-purple-500/40 flex flex-col gap-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+        <div>
+          <h3 class="font-bold text-base sm:text-lg text-white">خطط وأسعار VideoPro Edit</h3>
+          <p class="text-xs text-gray-400 mt-0.5">اختر الخطة المناسبة لإنشاء وتعديل فيديوهاتك بأعلى كفاءة</p>
+        </div>
+        <button id="close-pricing-modal" class="text-gray-400 hover:text-white transition cursor-pointer p-1">✕</button>
+      </div>
+
+      <!-- Billing Toggle -->
+      <div class="flex items-center justify-center gap-3 py-1">
+        <span id="billing-monthly-label" class="text-xs font-bold text-white">شهري</span>
+        <button id="pricing-billing-toggle" class="w-12 h-6 rounded-full bg-purple-600 relative p-0.5 transition cursor-pointer">
+          <div id="billing-toggle-knob" class="w-5 h-5 rounded-full bg-white transition-transform translate-x-0"></div>
+        </button>
+        <span id="billing-annual-label" class="text-xs font-medium text-gray-400 flex items-center gap-1">
+          سنوي
+          <span class="text-[9px] bg-emerald-900/60 text-emerald-300 border border-emerald-500/40 px-1 py-0.5 rounded font-bold">خصم ٢٠٪</span>
+        </span>
+      </div>
+
+      <!-- Plans Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-right">
+        <!-- Free Plan -->
+        <div class="p-4 rounded-xl bg-gray-900/80 border border-gray-800 flex flex-col justify-between gap-3">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-sm text-gray-200">الخطة المجانية</span>
+              <span class="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded font-semibold">Starter</span>
+            </div>
+            <div class="text-xl sm:text-2xl font-black text-white mt-2">$0 <span class="text-xs text-gray-400 font-normal">/ دائماً</span></div>
+            <p class="text-[11px] text-gray-400 mt-1">مثالية للبدايات وتجربة أدوات التقطيع الأساسية</p>
+            <ul class="flex flex-col gap-1.5 mt-3 text-xs text-gray-300">
+              <li class="flex items-center gap-1.5">✓ تقطيع فيديو غير محدود</li>
+              <li class="flex items-center gap-1.5">✓ تصدير بدقة 1080p Full HD</li>
+              <li class="flex items-center gap-1.5">✓ ترجمة صوتية أساسية</li>
+            </ul>
+          </div>
+          <button class="plan-select-btn w-full py-2 rounded-lg bg-gray-800 text-gray-300 text-xs font-bold hover:bg-gray-700 transition cursor-pointer" data-plan="free">
+            خطتك الحالية
+          </button>
+        </div>
+
+        <!-- Pro Plan (Featured) -->
+        <div class="p-4 rounded-xl bg-purple-950/40 border-2 border-purple-500 glow-purple-sm flex flex-col justify-between gap-3 relative">
+          <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full shadow">
+            الأكثر شعبية
+          </div>
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-sm text-purple-300">خطة برو الاحترافية</span>
+              <span class="text-[10px] bg-purple-900/60 text-purple-300 px-2 py-0.5 rounded font-semibold">Pro Suite</span>
+            </div>
+            <div class="text-xl sm:text-2xl font-black text-white mt-2">
+              <span class="plan-price-pro">$19</span> <span class="text-xs text-gray-400 font-normal">/ شهرياً</span>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-1">لصناع المحتوى والمحترفين لإنتاج محتوى فيرال</p>
+            <ul class="flex flex-col gap-1.5 mt-3 text-xs text-gray-200">
+              <li class="flex items-center gap-1.5 text-purple-300 font-semibold">✓ تصدير فائق 4K Ultra HD</li>
+              <li class="flex items-center gap-1.5">✓ استخراج أفضل اللقطات بالذكاء الاصطناعي</li>
+              <li class="flex items-center gap-1.5">✓ حذف فترات الصمت التلقائي</li>
+              <li class="flex items-center gap-1.5">✓ تحويل المقاس 9:16 مع بلور ذكي</li>
+              <li class="flex items-center gap-1.5">✓ دمج المقاطع والصوتيات بلا حدود</li>
+            </ul>
+          </div>
+          <button class="plan-select-btn w-full py-2 rounded-lg btn-primary text-xs font-bold shadow-lg cursor-pointer" data-plan="pro">
+            ترقية إلى برو الآن
+          </button>
+        </div>
+
+        <!-- Enterprise Plan -->
+        <div class="p-4 rounded-xl bg-gray-900/80 border border-gray-800 flex flex-col justify-between gap-3">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-sm text-indigo-300">خطة الشركات</span>
+              <span class="text-[10px] bg-indigo-900/60 text-indigo-300 px-2 py-0.5 rounded font-semibold">Business</span>
+            </div>
+            <div class="text-xl sm:text-2xl font-black text-white mt-2">
+              <span class="plan-price-biz">$49</span> <span class="text-xs text-gray-400 font-normal">/ شهرياً</span>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-1">للفرق والاستوديوهات الكبيرة مع دعم فني مخصص</p>
+            <ul class="flex flex-col gap-1.5 mt-3 text-xs text-gray-300">
+              <li class="flex items-center gap-1.5">✓ كافة مميزات برو الاحترافية</li>
+              <li class="flex items-center gap-1.5">✓ معالجة سحابية فائقة السرعة</li>
+              <li class="flex items-center gap-1.5">✓ واجهات برمجة تطبيقات API</li>
+              <li class="flex items-center gap-1.5">✓ دعم فني مدار الساعة 24/7</li>
+            </ul>
+          </div>
+          <button class="plan-select-btn w-full py-2 rounded-lg bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-bold transition cursor-pointer" data-plan="enterprise">
+            طلب خطة الشركات
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. HELP & FAQ MODAL (المساعدة) -->
+  <div id="help-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-3 sm:p-4">
+    <div class="glass-panel w-full max-w-2xl p-5 sm:p-6 modal-enter border border-purple-500/40 flex flex-col gap-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-blue-600/30 text-blue-400 flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-white">مركز المساعدة واختصارات الاستوديو</h3>
+        </div>
+        <button id="close-help-modal" class="text-gray-400 hover:text-white transition cursor-pointer p-1">✕</button>
+      </div>
+
+      <!-- Keyboard Shortcuts -->
+      <div>
+        <h4 class="text-xs font-bold text-purple-300 mb-2">⌨️ اختصارات لوحة المفاتيح:</h4>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div class="p-2 rounded-lg bg-gray-900 border border-gray-800 flex items-center justify-between">
+            <span class="text-gray-400">تشغيل / إيقاف</span>
+            <kbd class="px-1.5 py-0.5 rounded bg-black/60 font-mono text-purple-300 text-[10px]">مسافة</kbd>
+          </div>
+          <div class="p-2 rounded-lg bg-gray-900 border border-gray-800 flex items-center justify-between">
+            <span class="text-gray-400">تأخير ثانية</span>
+            <kbd class="px-1.5 py-0.5 rounded bg-black/60 font-mono text-purple-300 text-[10px]">J</kbd>
+          </div>
+          <div class="p-2 rounded-lg bg-gray-900 border border-gray-800 flex items-center justify-between">
+            <span class="text-gray-400">تقديم ثانية</span>
+            <kbd class="px-1.5 py-0.5 rounded bg-black/60 font-mono text-purple-300 text-[10px]">L</kbd>
+          </div>
+          <div class="p-2 rounded-lg bg-gray-900 border border-gray-800 flex items-center justify-between">
+            <span class="text-gray-400">شاشة كاملة</span>
+            <kbd class="px-1.5 py-0.5 rounded bg-black/60 font-mono text-purple-300 text-[10px]">F</kbd>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ Accordion -->
+      <div>
+        <h4 class="text-xs font-bold text-purple-300 mb-2">❓ الأسئلة الشائعة:</h4>
+        <div class="flex flex-col gap-2 text-xs">
+          <details class="p-3 rounded-lg bg-gray-900/90 border border-gray-800 group cursor-pointer">
+            <summary class="font-bold text-gray-200 flex items-center justify-between">
+              <span>كيف أقوم بتقطيع الفيديو إلى ٣٠ أو ٦٠ ثانية للنشر في واتساب وتيك توك؟</span>
+              <span class="text-gray-500 group-open:rotate-180 transition">▼</span>
+            </summary>
+            <p class="text-gray-400 mt-2 leading-relaxed">
+              افتح أداة "تقطيع الفيديو الذكي"، اختر المدة المطلوبة (٣٠ ثانية أو ٦٠ ثانية)، ثم اضغط "بدء تقطيع الفيديو". سيقوم النظام بتقطيع الفيديو فورياً بدون أي فقدان للجودة وتنزيلها كملف ZIP مجمع أو مقاطع فردية.
+            </p>
+          </details>
+
+          <details class="p-3 rounded-lg bg-gray-900/90 border border-gray-800 group cursor-pointer">
+            <summary class="font-bold text-gray-200 flex items-center justify-between">
+              <span>ما هي فائدة أداة حذف الصمت التلقائي (Jump Cut)؟</span>
+              <span class="text-gray-500 group-open:rotate-180 transition">▼</span>
+            </summary>
+            <p class="text-gray-400 mt-2 leading-relaxed">
+              تكتشف الأداة فترات السكون والوقفات الصامتة أثناء التحدث وتقصها بدقة متناهية، مما يجعل الفيديو أكثر سرعة وتفاعلاً لمقاطع البودكاست والشروحات.
+            </p>
+          </details>
+
+          <details class="p-3 rounded-lg bg-gray-900/90 border border-gray-800 group cursor-pointer">
+            <summary class="font-bold text-gray-200 flex items-center justify-between">
+              <span>كيف أقوم بتحويل الفيديو الأفقي إلى طولي 9:16 مع خلفية ضبابية؟</span>
+              <span class="text-gray-500 group-open:rotate-180 transition">▼</span>
+            </summary>
+            <p class="text-gray-400 mt-2 leading-relaxed">
+              اختر أداة "تحويل المقاس والكادر"، حدد المقاس 9:16، ثم اختر وضع "Smart Blur". سيقوم النظام بإنتاج خلفية ضبابية سينمائية متطابقة تجعل المقطع جاهزاً فوراً للإنستغرام والتيك توك.
+            </p>
+          </details>
+        </div>
+      </div>
+
+      <!-- Contact Support Button -->
+      <div class="pt-2 border-t border-gray-800 flex items-center justify-between">
+        <span class="text-xs text-gray-400">هل تحتاج لمساعدة إضافية؟</span>
+        <button id="contact-support-btn" class="px-4 py-2 rounded-lg bg-purple-700 hover:bg-purple-600 text-white text-xs font-bold transition cursor-pointer">
+          تواصل مع الدعم الفني
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 11. AUTH / LOGIN MODAL (تسجيل الدخول) -->
+  <div id="auth-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-4">
+    <div class="glass-panel w-full max-w-sm p-5 sm:p-6 modal-enter border border-purple-500/50 glow-purple flex flex-col gap-4">
+      <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+        <h3 id="auth-modal-title" class="font-bold text-base text-white">تسجيل الدخول إلى VideoPro</h3>
+        <button id="close-auth-modal" class="text-gray-400 hover:text-white transition cursor-pointer p-1">✕</button>
+      </div>
+
+      <!-- Auth Tabs -->
+      <div class="flex rounded-lg bg-black/40 p-1 border border-gray-800 text-xs">
+        <button id="auth-tab-signin" class="flex-1 py-1.5 rounded-md bg-purple-600 text-white font-bold transition cursor-pointer">
+          تسجيل الدخول
+        </button>
+        <button id="auth-tab-signup" class="flex-1 py-1.5 rounded-md text-gray-400 font-medium hover:text-white transition cursor-pointer">
+          حساب جديد
+        </button>
+      </div>
+
+      <form id="auth-form" class="flex flex-col gap-3 text-xs" onsubmit="event.preventDefault();">
+        <div id="auth-name-container" class="hidden flex flex-col gap-1">
+          <label class="text-gray-400">الاسم الكامل:</label>
+          <input type="text" id="auth-name-input" placeholder="مثال: مراد العبدالله" class="bg-[#121826] border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-purple-500 focus:outline-none">
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-gray-400">البريد الإلكتروني:</label>
+          <input type="email" id="auth-email-input" placeholder="name@example.com" value="user@videopro.com" class="bg-[#121826] border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-purple-500 focus:outline-none">
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-gray-400">كلمة المرور:</label>
+          <input type="password" id="auth-password-input" value="••••••••" class="bg-[#121826] border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-purple-500 focus:outline-none">
+        </div>
+
+        <button type="button" id="auth-submit-btn" class="w-full mt-1 py-2.5 rounded-lg btn-primary text-xs font-bold shadow-lg cursor-pointer">
+          دخول إلى الاستوديو
+        </button>
+      </form>
+
+      <div class="flex items-center gap-2 my-1 text-gray-500 text-[11px]">
+        <div class="flex-1 h-[1px] bg-gray-800"></div>
+        <span>أو عبر</span>
+        <div class="flex-1 h-[1px] bg-gray-800"></div>
+      </div>
+
+      <button id="auth-google-btn" class="w-full py-2 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer">
+        <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+        <span>المتابعة عبر Google</span>
+      </button>
+
+      <button id="auth-guest-btn" class="w-full py-1.5 text-center text-xs text-purple-400 hover:text-purple-300 font-semibold transition cursor-pointer">
+        المتابعة كضيف (بدون حساب)
+      </button>
+    </div>
+  </div>
+
+  <!-- 12. USER PROFILE MODAL -->
+  <div id="user-profile-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-4">
+    <div class="glass-panel w-full max-w-sm p-5 sm:p-6 modal-enter border border-purple-500/40 flex flex-col gap-4">
+      <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+        <h3 class="font-bold text-sm text-white">الملف الشخصي والاشتراك</h3>
+        <button id="close-profile-modal" class="text-gray-400 hover:text-white transition cursor-pointer p-1">✕</button>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-lg">
+          م
+        </div>
+        <div>
+          <div id="profile-name-display" class="font-bold text-sm text-white">مراد العبدالله</div>
+          <div id="profile-email-display" class="text-xs text-gray-400">murad@videopro.com</div>
+          <span class="inline-block mt-1 text-[9px] bg-purple-900/60 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded font-bold">عضوية برو الاحترافية ★</span>
+        </div>
+      </div>
+
+      <!-- Cloud Storage Status -->
+      <div class="p-3 rounded-lg bg-gray-900 border border-gray-800 flex flex-col gap-1.5 text-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-gray-400">التخزين السحابي:</span>
+          <span class="font-mono text-purple-300 font-bold">2.4 GB / 50 GB</span>
+        </div>
+        <div class="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full bg-gradient-to-r from-purple-500 to-indigo-500 w-[5%]"></div>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2 pt-1">
+        <button onclick="document.getElementById('close-profile-modal').click(); document.getElementById('nav-pricing-btn').click();" class="w-full py-2 rounded-lg bg-purple-900/30 hover:bg-purple-900/50 border border-purple-700/50 text-purple-300 text-xs font-bold transition cursor-pointer">
+          إدارة خطة الاشتراك
+        </button>
+        <button id="logout-btn" class="w-full py-2 rounded-lg bg-gray-800 hover:bg-red-950/40 text-gray-300 hover:text-red-300 border border-gray-700 text-xs font-bold transition cursor-pointer">
+          تسجيل الخروج
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 13. VIDEO INFO & TECHNICAL SPECS MODAL (1080p Badge Click) -->
+  <div id="video-info-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-4">
+    <div class="glass-panel w-full max-w-md p-5 sm:p-6 modal-enter border border-purple-500/40 flex flex-col gap-4">
+      <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <h3 class="font-bold text-sm text-white">المواصفات الفنية للفيديو</h3>
+        </div>
+        <button id="close-video-info-modal" class="text-gray-400 hover:text-white transition cursor-pointer p-1">✕</button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <div class="p-2.5 rounded-lg bg-gray-900 border border-gray-800 flex flex-col gap-0.5">
+          <span class="text-gray-400 text-[10px]">الدقة الفعلية:</span>
+          <span id="spec-resolution" class="font-mono text-purple-300 font-bold">1920x1080 (1080p)</span>
+        </div>
+        <div class="p-2.5 rounded-lg bg-gray-900 border border-gray-800 flex flex-col gap-0.5">
+          <span class="text-gray-400 text-[10px]">معدل الإطارات:</span>
+          <span id="spec-fps" class="font-mono text-purple-300 font-bold">30.0 FPS</span>
+        </div>
+        <div class="p-2.5 rounded-lg bg-gray-900 border border-gray-800 flex flex-col gap-0.5">
+          <span class="text-gray-400 text-[10px]">مدة المقطع:</span>
+          <span id="spec-duration" class="font-mono text-purple-300 font-bold">01:24</span>
+        </div>
+        <div class="p-2.5 rounded-lg bg-gray-900 border border-gray-800 flex flex-col gap-0.5">
+          <span class="text-gray-400 text-[10px]">ترميز الفيديو:</span>
+          <span id="spec-codec" class="font-mono text-purple-300 font-bold">H.264 / AVC</span>
+        </div>
+        <div class="p-2.5 rounded-lg bg-gray-900 border border-gray-800 flex flex-col gap-0.5">
+          <span class="text-gray-400 text-[10px]">نسبة الكادر:</span>
+          <span id="spec-ratio" class="font-mono text-purple-300 font-bold">16:9 Landscape</span>
+        </div>
+        <div class="p-2.5 rounded-lg bg-gray-900 border border-gray-800 flex flex-col gap-0.5">
+          <span class="text-gray-400 text-[10px]">مسار الصوت:</span>
+          <span id="spec-audio" class="font-mono text-emerald-400 font-bold">Stereo AAC 192k</span>
+        </div>
+      </div>
+
+      <div class="pt-2 border-t border-gray-800 flex items-center justify-between text-xs">
+        <span class="text-gray-400">جودة المعاينة:</span>
+        <select id="preview-quality-switcher" class="bg-[#151c2c] border border-gray-700 rounded-lg px-2.5 py-1 text-gray-200">
+          <option value="1080p" selected>1080p HD (الأصلية)</option>
+          <option value="720p">720p HD (سريعة)</option>
+          <option value="480p">480p SD (توفير بيانات)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 14. PLAYER SETTINGS MODAL (Gear Button Click) -->
+  <div id="player-settings-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-4">
+    <div class="glass-panel w-full max-w-xs p-5 sm:p-6 modal-enter border border-purple-500/40 flex flex-col gap-3.5">
+      <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+        <h3 class="font-bold text-sm text-white">إعدادات التشغيل</h3>
+        <button id="close-settings-modal" class="text-gray-400 hover:text-white transition cursor-pointer p-1">✕</button>
+      </div>
+
+      <div class="flex flex-col gap-2 text-xs">
+        <label class="text-gray-400 font-semibold">سرعة التشغيل:</label>
+        <div class="grid grid-cols-3 gap-1.5">
+          <button class="speed-btn px-2 py-1.5 rounded bg-gray-800 hover:bg-purple-900/40 text-gray-300 hover:text-white font-mono transition cursor-pointer" data-speed="0.5">0.5x</button>
+          <button class="speed-btn px-2 py-1.5 rounded bg-gray-800 hover:bg-purple-900/40 text-gray-300 hover:text-white font-mono transition cursor-pointer" data-speed="0.75">0.75x</button>
+          <button class="speed-btn active border border-purple-500 bg-purple-900/50 px-2 py-1.5 rounded text-white font-bold font-mono transition cursor-pointer" data-speed="1.0">1.0x</button>
+          <button class="speed-btn px-2 py-1.5 rounded bg-gray-800 hover:bg-purple-900/40 text-gray-300 hover:text-white font-mono transition cursor-pointer" data-speed="1.25">1.25x</button>
+          <button class="speed-btn px-2 py-1.5 rounded bg-gray-800 hover:bg-purple-900/40 text-gray-300 hover:text-white font-mono transition cursor-pointer" data-speed="1.5">1.5x</button>
+          <button class="speed-btn px-2 py-1.5 rounded bg-gray-800 hover:bg-purple-900/40 text-gray-300 hover:text-white font-mono transition cursor-pointer" data-speed="2.0">2.0x</button>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-gray-800 text-xs">
+        <span class="text-gray-300">تكرار التشغيل (Loop):</span>
+        <input type="checkbox" id="player-loop-toggle" class="accent-purple-500 cursor-pointer w-4 h-4">
+      </div>
+
+      <button id="pip-toggle-btn" class="w-full py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+        تشغيل كنافذة منبثقة (PiP)
+      </button>
+    </div>
+  </div>
+
+  <!-- 15. AUDIO & MUSIC MODAL (Tool 6) -->
+  <div id="audio-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-3 sm:p-4">
+    <div class="glass-panel w-full max-w-lg p-5 sm:p-6 modal-enter border border-teal-500/40 flex flex-col gap-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-teal-600/30 text-teal-400 flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-white">إضافة صوت وموسيقى للخلفية</h3>
+        </div>
+        <button id="close-audio-modal" class="text-gray-400 hover:text-white transition cursor-pointer p-1">✕</button>
+      </div>
+
+      <!-- Presets & Custom Upload -->
+      <div class="flex flex-col gap-2 text-xs">
+        <label class="text-gray-300 font-semibold">اختر مقطوعة موسيقية بدون حقوق ملكية:</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button class="audio-preset-btn active border-teal-500 bg-teal-950/50 p-2.5 rounded-xl border text-center flex flex-col items-center gap-1 cursor-pointer" data-preset="upbeat">
+            <span class="font-bold text-teal-300">⚡ حماسية</span>
+            <span class="text-[9px] text-gray-400">ريلز وتيك توك</span>
+          </button>
+          <button class="audio-preset-btn p-2.5 rounded-xl border border-gray-800 bg-[#121826] text-center flex flex-col items-center gap-1 hover:border-teal-500 cursor-pointer" data-preset="calm">
+            <span class="font-bold text-teal-300">🍃 هادئة</span>
+            <span class="text-[9px] text-gray-400">وثائقي ومدونات</span>
+          </button>
+          <button class="audio-preset-btn p-2.5 rounded-xl border border-gray-800 bg-[#121826] text-center flex flex-col items-center gap-1 hover:border-teal-500 cursor-pointer" data-preset="podcast">
+            <span class="font-bold text-teal-300">🎙️ بودكاست</span>
+            <span class="text-[9px] text-gray-400">إيقاع خفيف خلفي</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom Audio Upload -->
+      <div class="p-3 rounded-lg bg-gray-900 border border-gray-800 flex items-center justify-between text-xs">
+        <div>
+          <div class="font-bold text-gray-200">أو رفع مقطع صوت خاص بك:</div>
+          <div id="audio-file-name" class="text-[10px] text-gray-400">MP3, WAV, AAC, M4A</div>
+        </div>
+        <input type="file" id="custom-audio-input" accept="audio/*" class="hidden">
+        <button onclick="document.getElementById('custom-audio-input').click()" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-teal-300 border border-gray-700 font-bold transition cursor-pointer">
+          اختيار ملف صوت
+        </button>
+      </div>
+
+      <!-- Volume Controls -->
+      <div class="grid grid-cols-2 gap-3 text-xs">
+        <div class="flex flex-col gap-1">
+          <div class="flex justify-between text-gray-400">
+            <span>صوت الفيديو الأصلي:</span>
+            <span id="audio-orig-vol-text">100%</span>
+          </div>
+          <input type="range" id="audio-orig-vol-slider" min="0" max="1" step="0.05" value="1.0" class="accent-teal-500 cursor-pointer">
+        </div>
+        <div class="flex flex-col gap-1">
+          <div class="flex justify-between text-gray-400">
+            <span>صوت الموسيقى:</span>
+            <span id="audio-music-vol-text">50%</span>
+          </div>
+          <input type="range" id="audio-music-vol-slider" min="0" max="1" step="0.05" value="0.5" class="accent-teal-500 cursor-pointer">
+        </div>
+      </div>
+
+      <div id="audio-status-text" class="text-xs text-center text-teal-300 font-semibold"></div>
+
+      <div id="audio-result-box" class="hidden">
+        <a id="audio-download-link" href="#" class="w-full py-2 btn-primary text-xs shadow-lg text-center" download>تحميل الفيديو مع الصوت المدمج</a>
+      </div>
+
+      <button id="execute-audio-btn" class="w-full py-2.5 btn-primary text-xs sm:text-sm shadow-xl cursor-pointer">
+        دمج الصوت والموسيقى مع الفيديو
+      </button>
+    </div>
+  </div>
+
+  <!-- 16. MERGE CLIPS MODAL (Tool 7) -->
+  <div id="merge-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-3 sm:p-4">
+    <div class="glass-panel w-full max-w-lg p-5 sm:p-6 modal-enter border border-indigo-500/40 flex flex-col gap-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-400 flex items-center justify-center font-bold">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-white">دمج المقاطع وتجميعها</h3>
+        </div>
+        <button id="close-merge-modal" class="text-gray-400 hover:text-white transition cursor-pointer p-1">✕</button>
+      </div>
+
+      <p class="text-xs text-gray-300">
+        قم بإضافة مقاطع فيديو أخرى لدمجها مع الفيديو الحالي بالترتيب المطلوب في ملف فيديو واحد عالي الدقة.
+      </p>
+
+      <!-- Add extra clips input -->
+      <div class="flex items-center justify-between p-3 rounded-lg bg-gray-900 border border-gray-800 text-xs">
+        <div>
+          <span class="font-bold text-gray-200">إضافة مقاطع فيديو للدمج:</span>
+          <div class="text-[10px] text-gray-400">يمكنك اختيار ملفات متعددة</div>
+        </div>
+        <input type="file" id="merge-files-input" accept="video/*" multiple class="hidden">
+        <button onclick="document.getElementById('merge-files-input').click()" class="px-3 py-1.5 rounded-lg btn-primary text-xs font-bold shadow cursor-pointer">
+          + اختيار مقاطع
+        </button>
+      </div>
+
+      <!-- Clips queue -->
+      <div class="flex flex-col gap-2">
+        <span class="text-xs text-gray-400 font-semibold">ترتيب المقاطع:</span>
+        <div id="merge-clips-list" class="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div id="merge-status-text" class="text-xs text-center text-indigo-300 font-semibold"></div>
+
+      <div id="merge-result-box" class="hidden">
+        <a id="merge-download-link" href="#" class="w-full py-2 btn-primary text-xs shadow-lg text-center" download>تحميل الفيديو المدمج النهائي</a>
+      </div>
+
+      <button id="execute-merge-btn" class="w-full py-2.5 btn-primary text-xs sm:text-sm shadow-xl cursor-pointer">
+        بدء دمج المقاطع في فيديو واحد
+      </button>
+    </div>
+  </div>
+
+  <!-- 17. TEXT & STICKERS MODAL (Tool 9) -->
+  <div id="text-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-3 sm:p-4">
+    <div class="glass-panel w-full max-w-lg p-5 sm:p-6 modal-enter border border-fuchsia-500/40 flex flex-col gap-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-fuchsia-600/30 text-fuchsia-400 flex items-center justify-center font-bold">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-white">إضافة نصوص وشعارات وملصقات</h3>
+        </div>
+        <button id="close-text-modal" class="text-gray-400 hover:text-white transition cursor-pointer p-1">✕</button>
+      </div>
+
+      <!-- Text input -->
+      <div class="flex flex-col gap-1 text-xs">
+        <label class="text-gray-300 font-semibold">النص المراد عرضه:</label>
+        <input type="text" id="overlay-text-input" value="اشترك في القناة ليصلك كل جديد 🔥" class="bg-[#121826] border border-gray-700 rounded-lg px-3 py-2 text-white font-medium focus:border-fuchsia-500 focus:outline-none">
+      </div>
+
+      <!-- Quick stickers chips -->
+      <div class="flex flex-col gap-1.5 text-xs">
+        <label class="text-gray-400">ملصقات وشعارات سريعة:</label>
+        <div class="flex flex-wrap gap-1.5">
+          <button class="sticker-chip px-2.5 py-1 rounded-full bg-gray-800 hover:bg-fuchsia-900/50 text-gray-200 text-xs border border-gray-700 cursor-pointer transition">🔥 ترند</button>
+          <button class="sticker-chip px-2.5 py-1 rounded-full bg-gray-800 hover:bg-fuchsia-900/50 text-gray-200 text-xs border border-gray-700 cursor-pointer transition">⚡ عاجل</button>
+          <button class="sticker-chip px-2.5 py-1 rounded-full bg-gray-800 hover:bg-fuchsia-900/50 text-gray-200 text-xs border border-gray-700 cursor-pointer transition">🔔 اشترك الآن</button>
+          <button class="sticker-chip px-2.5 py-1 rounded-full bg-gray-800 hover:bg-fuchsia-900/50 text-gray-200 text-xs border border-gray-700 cursor-pointer transition">❤️ إعجاب</button>
+          <button class="sticker-chip px-2.5 py-1 rounded-full bg-gray-800 hover:bg-fuchsia-900/50 text-gray-200 text-xs border border-gray-700 cursor-pointer transition">🎬 جديد</button>
+          <button class="sticker-chip px-2.5 py-1 rounded-full bg-gray-800 hover:bg-fuchsia-900/50 text-gray-200 text-xs border border-gray-700 cursor-pointer transition">👑 VIP</button>
+        </div>
+      </div>
+
+      <!-- Controls: Position, Color, Size -->
+      <div class="grid grid-cols-3 gap-2 text-xs">
+        <div>
+          <label class="text-gray-400 block mb-1">الموضع:</label>
+          <select id="overlay-position-select" class="w-full bg-[#151c2c] border border-gray-700 rounded-lg p-2 text-gray-200">
+            <option value="bottom" selected>أسفل الشاشة</option>
+            <option value="center">وسط الشاشة</option>
+            <option value="top">أعلى الشاشة</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-gray-400 block mb-1">اللون:</label>
+          <input type="color" id="overlay-color-picker" value="#facc15" class="w-full h-8 bg-transparent rounded cursor-pointer">
+        </div>
+        <div>
+          <label class="text-gray-400 block mb-1">الحجم:</label>
+          <input type="range" id="overlay-size-slider" min="18" max="54" value="32" class="w-full mt-2 accent-fuchsia-500 cursor-pointer">
+        </div>
+      </div>
+
+      <div id="text-status-text" class="text-xs text-center text-fuchsia-300 font-semibold"></div>
+
+      <div id="text-result-box" class="hidden">
+        <a id="text-download-link" href="#" class="w-full py-2 btn-primary text-xs shadow-lg text-center" download>تحميل الفيديو مع النص المحروق</a>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="preview-text-btn" class="flex-1 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-bold border border-gray-700 transition cursor-pointer">
+          معاينة في المشغل
+        </button>
+        <button id="execute-text-btn" class="flex-1 py-2 btn-primary text-xs font-bold shadow cursor-pointer">
+          حرق النص على الفيديو
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 18. EXPORT LIVE PROGRESS MODAL -->
+  <div id="export-progress-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-4">
+    <div class="glass-panel w-full max-w-md p-5 sm:p-6 modal-enter border border-purple-500/50 glow-purple flex flex-col gap-4">
+      <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-purple-600/30 text-purple-400 flex items-center justify-center font-bold">
+            <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm sm:text-base text-white">تصدير الفيديو النهائي</h3>
+            <p id="export-details-display" class="text-xs text-gray-400">1080p Full HD • MP4</p>
+          </div>
+        </div>
+        <span id="export-percent-badge" class="px-2.5 py-1 rounded-full bg-purple-900/60 text-purple-300 font-mono font-bold text-xs border border-purple-500/40">0%</span>
+      </div>
+
+      <!-- Export progress bar -->
+      <div class="w-full h-3 bg-gray-900 rounded-full overflow-hidden border border-gray-800 p-0.5">
+        <div id="export-progress-bar" class="h-full bg-gradient-to-r from-purple-600 to-indigo-500 rounded-full w-0 transition-all duration-300"></div>
+      </div>
+
+      <div class="flex flex-col gap-1.5 p-3 rounded-lg bg-black/40 border border-gray-800 text-xs">
+        <div id="export-step-1" class="flex items-center gap-2 text-purple-300">
+          <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
+          <span>تطبيق فلاتر الألوان والسطوع والتحسينات...</span>
+        </div>
+        <div id="export-step-2" class="flex items-center gap-2 text-gray-500">
+          <span class="w-2 h-2 rounded-full bg-gray-600"></span>
+          <span>معالجة مقاسات الكادر والجودة المحددة...</span>
+        </div>
+        <div id="export-step-3" class="flex items-center gap-2 text-gray-500">
+          <span class="w-2 h-2 rounded-full bg-gray-600"></span>
+          <span>تشفير الفيديو والصوت وتجهيز ملف التنزيل...</span>
+        </div>
+      </div>
+
+      <div id="export-status-text" class="text-xs text-center text-purple-300 font-semibold">جاري التصدير والمعالجة...</div>
+
+      <a id="export-download-btn" href="#" class="hidden w-full py-2.5 btn-primary text-xs sm:text-sm shadow-xl text-center cursor-pointer" download>
+        تحميل الفيديو الآن ⬇️
+      </a>
+    </div>
+  </div>
+
+  <!-- 19. TIMECODE JUMP MODAL -->
+  <div id="timecode-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-4">
+    <div class="glass-panel w-full max-w-xs p-5 modal-enter border border-purple-500/40 flex flex-col gap-3.5">
+      <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+        <h3 class="font-bold text-sm text-white">القفز إلى توقيت محدد</h3>
+        <button id="close-timecode-modal" class="text-gray-400 hover:text-white transition cursor-pointer p-1">✕</button>
+      </div>
+
+      <div class="flex flex-col gap-1 text-xs">
+        <label class="text-gray-300">حدد التوقيت بالثواني أو (دقيقة:ثانية):</label>
+        <input type="text" id="timecode-jump-input" placeholder="مثال: 00:45 أو 45" class="bg-[#121826] border border-gray-700 rounded-lg px-3 py-2 text-purple-300 font-mono font-bold text-sm text-center focus:border-purple-500 focus:outline-none">
+      </div>
+
+      <button id="execute-timecode-jump-btn" class="w-full py-2 btn-primary text-xs font-bold shadow cursor-pointer">
+        انتقال للموضع
+      </button>
+    </div>
+  </div>
+
 
   <!-- Footer Info -->
   <footer class="w-full py-2.5 px-4 sm:px-6 border-t border-[#141b2b] bg-[#090d14] flex flex-col sm:flex-row items-center justify-between text-[10px] sm:text-[11px] text-gray-500 gap-1.5 sm:gap-0">
