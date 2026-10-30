@@ -19,8 +19,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY backend/requirements.txt ./backend/
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
-# Pre-cache the tiny whisper model during build so startup and transcription are instant
-RUN python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8')"
+# Pre-cache and pre-compile the tiny whisper model during build so startup and transcription are instant (<2s)
+RUN python -c "from faster_whisper import WhisperModel; m = WhisperModel('tiny', device='cpu', compute_type='int8'); import numpy as np; list(m.transcribe(np.zeros(8000, dtype=np.float32), language='ar', beam_size=1)[0])"
 
 # Copy source code
 COPY backend/ ./backend/

@@ -338,19 +338,32 @@ class SubtitlesManager {
           extractFormData.append("chunk_reels", chunkForReels ? "true" : "false");
           extractFormData.append("max_words", "4");
 
-          const extractResp = await fetch("/api/video/subtitles", {
-            method: "POST",
-            body: extractFormData,
-          });
-          const extractData = await extractResp.json();
-          if (!extractResp.ok || !extractData.success || !extractData.cues || extractData.cues.length === 0) {
-            throw new Error(extractData.error || "لم يتم رصد كلام واضح في مقطع الصوت لاستخراجه");
-          }
+          const stage1Controller = new AbortController();
+          const stage1Timeout = setTimeout(() => stage1Controller.abort(), 20000);
 
-          // Immediately display cues in the UI so the user sees their speech captured accurately!
-          this.cues = extractData.cues;
-          this.renderCuesList();
-          this.updateTimelineSubtitleBlocks();
+          try {
+            const extractResp = await fetch("/api/video/subtitles", {
+              method: "POST",
+              body: extractFormData,
+              signal: stage1Controller.signal,
+            });
+            clearTimeout(stage1Timeout);
+            const extractData = await extractResp.json();
+            if (!extractResp.ok || !extractData.success || !extractData.cues || extractData.cues.length === 0) {
+              throw new Error(extractData.error || "لم يتم رصد كلام واضح في مقطع الصوت لاستخراجه");
+            }
+
+            // Immediately display cues in the UI so the user sees their speech captured accurately!
+            this.cues = extractData.cues;
+            this.renderCuesList();
+            this.updateTimelineSubtitleBlocks();
+          } catch (st1Err) {
+            clearTimeout(stage1Timeout);
+            if (st1Err.name === "AbortError") {
+              throw new Error("استغرقت معالجة الصوت وقتاً أطول من المتوقع، يرجى إعادة المحاولة");
+            }
+            throw st1Err;
+          }
 
           // STAGE 2: Burn subtitles into video frames with optimized ultrafast FFmpeg
           if (currentTask) {
@@ -572,6 +585,17 @@ class SubtitlesManager {
     }
   }
 
+  clearCues() {
+    this.cues = [];
+    this.renderCuesList();
+    this.updateTimelineSubtitleBlocks();
+    const statusText = document.getElementById("subtitles-status-text");
+    if (statusText) statusText.innerText = "";
+    if (this.subtitlesOverlay) {
+      this.subtitlesOverlay.innerText = "";
+      this.subtitlesOverlay.classList.add("hidden");
+    }
+  }
 
   addManualCue() {
     const video = document.getElementById("main-video");

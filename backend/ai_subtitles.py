@@ -157,17 +157,18 @@ PRESET_STYLES = {
     }
 }
 
-def extract_audio_numpy(video_path: str, sr: int = 16000, max_duration_sec: float = 180.0):
+def extract_audio_numpy(video_path: str, sr: int = 16000, max_duration_sec: float = 120.0):
     """Extract raw PCM audio as float32 numpy array using ffmpeg with strict timeout."""
     import numpy as np
     try:
         cmd = [
             "ffmpeg", "-nostdin", "-threads", "2", "-y",
             "-i", video_path,
+            "-vn",
             "-t", str(int(max_duration_sec)),
             "-f", "s16le", "-ac", "1", "-ar", str(sr), "-"
         ]
-        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=12)
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=8)
         if res.returncode != 0 or len(res.stdout) == 0:
             return None
         return np.frombuffer(res.stdout, np.int16).flatten().astype(np.float32) / 32768.0
@@ -204,12 +205,12 @@ def transcribe_fallback_google(video_path: str, language: str = "ar-SA") -> List
     temp_wav = os.path.join(os.path.dirname(video_path), f"temp_google_sr_{uuid.uuid4().hex[:6]}.wav")
     try:
         import speech_recognition as sr
-        # Extract audio to 16kHz mono wav (capped to 60s for instant recognition)
+        # Extract audio to 16kHz mono wav capped to 25s for fast fallback
         cmd = [
             "ffmpeg", "-nostdin", "-y", "-i", video_path,
-            "-t", "60", "-vn", "-ar", "16000", "-ac", "1", "-f", "wav", temp_wav
+            "-vn", "-t", "25", "-ar", "16000", "-ac", "1", "-f", "wav", temp_wav
         ]
-        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
+        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=6)
         if not os.path.exists(temp_wav) or os.path.getsize(temp_wav) < 1000:
             return []
 
@@ -218,9 +219,13 @@ def transcribe_fallback_google(video_path: str, language: str = "ar-SA") -> List
             audio_data = r.record(source)
 
         text = ""
-        for lang_code in [language, "ar-EG", "ar-AE", "ar-JO"]:
+        # Try primary Arabic first, then fallback to Egyptian dialect
+        langs_to_try = [language] if language != "ar" else ["ar-SA"]
+        if "ar-EG" not in langs_to_try:
+            langs_to_try.append("ar-EG")
+
+        for lang_code in langs_to_try:
             try:
-                # Use short 6s timeout per request so fallback never delays
                 text = r.recognize_google(audio_data, language=lang_code)
                 if text and len(text.strip()) > 0:
                     break
@@ -232,12 +237,12 @@ def transcribe_fallback_google(video_path: str, language: str = "ar-SA") -> List
             return []
 
         # Determine audio duration to distribute cues smoothly
-        duration = 6.0
+        duration = 5.0
         try:
             import subprocess as sp
             probe_cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", video_path]
-            dur_out = sp.check_output(probe_cmd, timeout=4).decode().strip()
-            duration = max(2.0, float(dur_out))
+            dur_out = sp.check_output(probe_cmd, timeout=3).decode().strip()
+            duration = max(2.0, min(float(dur_out), 30.0))
         except Exception:
             pass
 
@@ -372,8 +377,6 @@ def generate_subtitles(
         try:
             transcribe_kwargs = {
                 "beam_size": 1,  # Greedy search gives instant 1-2s response
-                "vad_filter": True,
-                "vad_parameters": dict(min_silence_duration_ms=300),
                 "temperature": 0.0,
                 "condition_on_previous_text": False,
                 "word_timestamps": False
@@ -382,14 +385,20 @@ def generate_subtitles(
                 transcribe_kwargs["language"] = "ar"
                 transcribe_kwargs["initial_prompt"] = ARABIC_INITIAL_PROMPT
 
-            # Run Whisper with a strict 9s timeout to never hang the server
+            # Run Whisper with a strict 7s timeout; pool.shutdown(wait=False) ensures thread never blocks caller on timeout
             def _transcribe_worker():
                 segs, inf = model.transcribe(audio_arr, **transcribe_kwargs)
                 return list(segs), getattr(inf, "language", "ar")
 
-            with ThreadPoolExecutor(max_workers=1) as pool:
-                future = pool.submit(_transcribe_worker)
-                raw_segments, detected_lang = future.result(timeout=9.0)
+            whisper_pool = ThreadPoolExecutor(max_workers=1)
+            try:
+                future = whisper_pool.submit(_transcribe_worker)
+                raw_segments, detected_lang = future.result(timeout=7.0)
+            finally:
+                try:
+                    whisper_pool.shutdown(wait=False, cancel_futures=True)
+                except Exception:
+                    pass
 
             print(f"Whisper transcribed audio in fast mode. Detected language: {detected_lang}")
 

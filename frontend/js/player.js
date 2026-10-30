@@ -310,6 +310,21 @@ class VideoPlayer {
     this.updateTimeDisplay();
   }
 
+  loadVideo(url, videoId = null) {
+    if (videoId) {
+      window.currentVideoId = videoId;
+    }
+    this.hideEmptyState();
+    if (this.video && url) {
+      this.video.src = url;
+      this.video.load();
+      this.video.play().catch(() => {});
+    }
+    if (window.timelineInstance) {
+      window.timelineInstance.setTime(0);
+    }
+  }
+
   formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0) seconds = 0;
     const mins = Math.floor(seconds / 60);

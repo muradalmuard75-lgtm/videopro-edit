@@ -188,6 +188,10 @@ document.addEventListener("DOMContentLoaded", () => {
             videoEl.play().catch(() => {});
           }
 
+          if (window.subtitlesManager) {
+            window.subtitlesManager.clearCues();
+          }
+
           if (data.info && data.info.duration) {
             timeline.duration = data.info.duration;
             timeline.setTime(0);
@@ -349,6 +353,10 @@ document.addEventListener("DOMContentLoaded", () => {
       videoEl.src = data.preview_url;
       videoEl.load();
       videoEl.play().catch(() => {});
+    }
+
+    if (window.subtitlesManager) {
+      window.subtitlesManager.clearCues();
     }
 
     if (data.info && data.info.duration) {

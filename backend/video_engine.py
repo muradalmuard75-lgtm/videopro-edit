@@ -854,10 +854,10 @@ def is_valid_youtube_url(url: str) -> bool:
     clean = url.strip()
     if not clean.startswith(("http://", "https://")):
         clean = "https://" + clean
-    # Support youtube.com/watch?v=..., youtu.be/..., youtube.com/shorts/..., m.youtube.com, etc.
+    # Support youtube.com/watch?v=..., youtu.be/..., youtube.com/shorts/..., m.youtube.com, music.youtube.com, etc.
     youtube_regex = (
-        r'^(https?://)?(www\.|m\.)?'
-        r'(youtube\.com/(watch\?.*v=|shorts/|embed/|v/|live/)|youtu\.be/)'
+        r'^(https?://)?([a-zA-Z0-9_-]+\.)?'
+        r'(youtube\.com/(watch\?.*v=|shorts/|embed/|v/|live/|clip/)|youtu\.be/)'
         r'([a-zA-Z0-9_-]{6,})'
     )
     return bool(re.search(youtube_regex, clean))
@@ -885,16 +885,25 @@ def download_youtube_video(
     target_basename = video_id
     out_tmpl = os.path.join(output_dir, f"{target_basename}.%(ext)s")
 
-    max_height = 1080 if str(quality).lower() == "1080p" else 720
-
-    # Format selector prioritizing standard MP4 video + M4A audio within max_height
-    format_selector = (
-        f"bestvideo[height<={max_height}][ext=mp4]+bestaudio[ext=m4a]/"
-        f"bestvideo[height<={max_height}]+bestaudio/"
-        f"best[height<={max_height}][ext=mp4]/"
-        f"best[height<={max_height}]/"
-        f"best"
-    )
+    # Format selector accommodating both landscape (16:9) and portrait Shorts (9:16)
+    if str(quality).lower() == "1080p":
+        format_selector = (
+            "bestvideo[height<=1080][width<=1920][ext=mp4]+bestaudio[ext=m4a]/"
+            "bestvideo[height<=1920][width<=1080][ext=mp4]+bestaudio[ext=m4a]/"
+            "bestvideo[height<=1080]+bestaudio/"
+            "bestvideo[width<=1080]+bestaudio/"
+            "best[height<=1080]/"
+            "best"
+        )
+    else:
+        format_selector = (
+            "bestvideo[height<=720][width<=1280][ext=mp4]+bestaudio[ext=m4a]/"
+            "bestvideo[height<=1280][width<=720][ext=mp4]+bestaudio[ext=m4a]/"
+            "bestvideo[height<=720]+bestaudio/"
+            "bestvideo[width<=720]+bestaudio/"
+            "best[height<=720]/"
+            "best"
+        )
 
     ydl_opts = {
         'format': format_selector,
@@ -904,6 +913,12 @@ def download_youtube_video(
         'quiet': True,
         'no_warnings': True,
         'socket_timeout': 30,
+        # Use mobile client fallback to prevent 403 Forbidden / bot detection on cloud IPs
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'ios', 'web']
+            }
+        },
         'postprocessor_args': {
             'ffmpeg': ['-movflags', '+faststart']
         }
@@ -915,21 +930,33 @@ def download_youtube_video(
             raise ValueError("فشل استخراج معلومات الفيديو من YouTube")
 
         raw_title = info_dict.get("title") or "YouTube Video"
-        safe_title = re.sub(r'[\\/*?:"<>|]', "", raw_title).strip() or "youtube_video"
+        safe_title = re.sub(r'[\\/*?:"<>|]', "", raw_title).strip()[:80] or "youtube_video"
 
     expected_mp4 = os.path.join(output_dir, f"{target_basename}.mp4")
 
-    # If the merged file has a different extension (e.g. .mkv, .webm), remux to .mp4
+    # If the merged file has a different extension (e.g. .mkv, .webm) or needs remuxing
     if not os.path.exists(expected_mp4):
         candidates = [f for f in os.listdir(output_dir) if f.startswith(target_basename)]
         if not candidates:
             raise FileNotFoundError("لم يتم العثور على ملف الفيديو بعد التنزيل")
         downloaded = os.path.join(output_dir, candidates[0])
+        # Transcode audio to AAC if needed so web browsers always play cleanly
         remux_cmd = [
             "ffmpeg", "-nostdin", "-y", "-i", downloaded,
-            "-c", "copy", "-movflags", "+faststart", expected_mp4
+            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+            "-movflags", "+faststart", expected_mp4
         ]
-        subprocess.run(remux_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        try:
+            subprocess.run(remux_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        except Exception:
+            fallback_cmd = [
+                "ffmpeg", "-nostdin", "-y", "-i", downloaded,
+                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                "-c:a", "aac", "-b:a", "192k",
+                "-movflags", "+faststart", expected_mp4
+            ]
+            subprocess.run(fallback_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+
         try:
             if downloaded != expected_mp4 and os.path.exists(downloaded):
                 os.remove(downloaded)

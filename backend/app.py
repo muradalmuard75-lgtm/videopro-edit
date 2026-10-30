@@ -52,6 +52,21 @@ if os.path.isdir(FONTS_DIR):
             except Exception:
                 pass
 
+# Background warm-up for Whisper so first user subtitle extraction is immediate (<2s)
+import threading
+def _background_whisper_warmup():
+    try:
+        from ai_subtitles import get_whisper_model
+        m = get_whisper_model()
+        if m is not None:
+            import numpy as np
+            list(m.transcribe(np.zeros(8000, dtype=np.float32), language="ar", beam_size=1)[0])
+            print("Whisper tiny speech engine pre-warmed successfully.")
+    except Exception as warmup_err:
+        print(f"Whisper warmup notice: {warmup_err}")
+
+threading.Thread(target=_background_whisper_warmup, daemon=True).start()
+
 app = FastAPI(title="VideoPro Edit API", description="Smart Video Editing & Auto-Splitting Suite")
 
 app.add_middleware(

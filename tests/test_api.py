@@ -250,6 +250,9 @@ class TestVideoProSuite(unittest.TestCase):
             "https://m.youtube.com/watch?v=dQw4w9WgXcQ",
             "www.youtube.com/watch?v=dQw4w9WgXcQ",
             "youtu.be/dQw4w9WgXcQ?si=abcdef12345",
+            "https://music.youtube.com/watch?v=dQw4w9WgXcQ",
+            "https://www.youtube.com/clip/Ugkx_1234567890abcdef",
+            "https://www.youtube.com/watch?feature=shared&v=dQw4w9WgXcQ",
         ]
         for u in valid_urls:
             self.assertTrue(is_valid_youtube_url(u), f"Failed for {u}")
