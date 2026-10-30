@@ -28,7 +28,7 @@ class TimelineEngine {
   }
 
   setupEventListeners() {
-    // Playhead drag
+    // Playhead drag (Mouse & Touch support)
     const handle = document.getElementById("playhead-handle");
     if (handle) {
       handle.addEventListener("mousedown", (e) => {
@@ -36,12 +36,22 @@ class TimelineEngine {
         document.body.style.cursor = "grabbing";
         e.preventDefault();
       });
+
+      handle.addEventListener("touchstart", (e) => {
+        this.isDraggingPlayhead = true;
+        e.preventDefault();
+      }, { passive: false });
     }
 
     window.addEventListener("mousemove", (e) => {
       if (!this.isDraggingPlayhead) return;
-      this.handleTimelineSeek(e);
+      this.handleTimelineSeek(e.clientX);
     });
+
+    window.addEventListener("touchmove", (e) => {
+      if (!this.isDraggingPlayhead || !e.touches[0]) return;
+      this.handleTimelineSeek(e.touches[0].clientX);
+    }, { passive: false });
 
     window.addEventListener("mouseup", () => {
       if (this.isDraggingPlayhead) {
@@ -50,11 +60,23 @@ class TimelineEngine {
       }
     });
 
-    // Click anywhere on timeline tracks to seek
+    window.addEventListener("touchend", () => {
+      if (this.isDraggingPlayhead) {
+        this.isDraggingPlayhead = false;
+      }
+    });
+
+    // Click or tap anywhere on timeline tracks to seek
     if (this.tracksWrapper) {
       this.tracksWrapper.addEventListener("click", (e) => {
-        this.handleTimelineSeek(e);
+        this.handleTimelineSeek(e.clientX);
       });
+
+      this.tracksWrapper.addEventListener("touchstart", (e) => {
+        if (e.touches[0]) {
+          this.handleTimelineSeek(e.touches[0].clientX);
+        }
+      }, { passive: true });
     }
 
     // Video timeupdate sync
@@ -81,10 +103,10 @@ class TimelineEngine {
     }
   }
 
-  handleTimelineSeek(e) {
+  handleTimelineSeek(clientX) {
     if (!this.tracksWrapper) return;
     const rect = this.tracksWrapper.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
+    const clickX = clientX - rect.left;
     const ratio = Math.max(0, Math.min(1, clickX / rect.width));
     const targetTime = ratio * this.duration;
     this.setTime(targetTime);
