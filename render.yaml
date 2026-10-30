@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: videopro-edit
+    env: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 8000
