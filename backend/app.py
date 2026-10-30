@@ -313,6 +313,59 @@ async def api_burn_subtitles(
     result["video_id"] = out_name
     return result
 
+@app.post("/api/video/auto-caption-and-burn")
+async def api_auto_caption_and_burn(
+    video_id: str = Form("sample"),
+    target_language: str = Form("ar"),
+    font_name: str = Form("Amiri"),
+    font_size: int = Form(40),
+    text_color: str = Form("#facc15"),
+    outline_color: str = Form("#000000"),
+    position: str = Form("bottom")
+):
+    """
+    All-in-one automated pipeline:
+    1. Extracts audio track directly on the server.
+    2. Transcribes spoken speech (Arabic or English) with precise timestamps.
+    3. If English, automatically translates speech to natural Arabic.
+    4. Automatically burns/hardcodes Arabic text into video frames using Amiri font.
+    5. Returns the ready subtitled video URL.
+    """
+    file_path = resolve_video_path(video_id)
+    sub_res = generate_subtitles(
+        video_path=file_path,
+        target_language=target_language
+    )
+    if not sub_res.get("success") or not sub_res.get("cues"):
+        err = sub_res.get("error", "لم يتم رصد كلام واضح في مقطع الصوت لاستخراجه")
+        raise HTTPException(status_code=400, detail=err)
+
+    cues = sub_res["cues"]
+    out_name = f"videopro_autocaptioned_{uuid.uuid4().hex[:6]}.mp4"
+    out_path = os.path.join(EXPORTS_DIR, out_name)
+
+    burn_res = burn_subtitles_into_video(
+        video_path=file_path,
+        output_path=out_path,
+        cues=cues,
+        font_name=font_name,
+        font_size=font_size,
+        text_color=text_color,
+        outline_color=outline_color,
+        position=position
+    )
+
+    if "error" in burn_res:
+        raise HTTPException(status_code=500, detail=burn_res["error"])
+
+    burn_res["url"] = f"/api/download/export/{out_name}"
+    burn_res["filename"] = out_name
+    burn_res["video_id"] = out_name
+    burn_res["cues"] = cues
+    burn_res["srt"] = sub_res.get("srt", "")
+    burn_res["detected_language"] = sub_res.get("detected_language", "ar")
+    return burn_res
+
 @app.post("/api/video/export")
 async def export_video(
     video_id: str = Form("sample"),

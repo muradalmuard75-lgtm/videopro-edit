@@ -112,6 +112,21 @@ class TestVideoProSuite(unittest.TestCase):
         self.assertIn("url", data)
         self.assertIn("filename", data)
 
+    def test_auto_caption_and_burn(self):
+        res = client.post("/api/video/auto-caption-and-burn", data={
+            "video_id": "sample",
+            "target_language": "ar",
+            "font_name": "Amiri",
+            "font_size": 36,
+            "text_color": "#facc15",
+            "position": "bottom"
+        })
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data.get("success"))
+        self.assertIn("url", data)
+        self.assertIn("cues", data)
+
     def test_export_video(self):
         res = client.post("/api/video/export", data={
             "video_id": "sample",

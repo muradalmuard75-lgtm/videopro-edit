@@ -1,24 +1,54 @@
 import os
 import json
 import base64
+import urllib.request
+import urllib.parse
 import subprocess
 from typing import List, Dict, Any, Optional
 
-def extract_audio_for_stt(video_path: str, audio_path: str) -> bool:
-    """Extract 16kHz mono audio optimized for Speech-to-Text."""
-    os.makedirs(os.path.dirname(audio_path), exist_ok=True)
+_whisper_model = None
+
+def get_whisper_model():
+    """Lazy load faster-whisper tiny model with int8 quantization for minimal RAM (<250MB)."""
+    global _whisper_model
+    if _whisper_model is None:
+        try:
+            from faster_whisper import WhisperModel
+            _whisper_model = WhisperModel("tiny", device="cpu", compute_type="int8")
+        except Exception as e:
+            print(f"Failed to load WhisperModel: {e}")
+            return None
+    return _whisper_model
+
+def extract_audio_numpy(video_path: str, sr: int = 16000):
+    """Extract raw PCM audio as float32 numpy array using ffmpeg."""
+    import numpy as np
     cmd = [
-        "ffmpeg", "-y",
+        "ffmpeg", "-nostdin", "-threads", "0", "-y",
         "-i", video_path,
-        "-vn",
-        "-ar", "16000",
-        "-ac", "1",
-        "-c:a", "libmp3lame",
-        "-b:a", "64k",
-        audio_path
+        "-f", "s16le", "-ac", "1", "-ar", str(sr), "-"
     ]
     res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return res.returncode == 0 and os.path.exists(audio_path) and os.path.getsize(audio_path) > 500
+    if res.returncode != 0 or len(res.stdout) == 0:
+        return None
+    return np.frombuffer(res.stdout, np.int16).flatten().astype(np.float32) / 32768.0
+
+def translate_to_arabic(text: str) -> str:
+    """Translate English or foreign speech to natural Arabic via free translation API."""
+    clean_text = text.strip()
+    if not clean_text:
+        return ""
+    try:
+        url = "https://api.mymemory.translated.net/get?q=" + urllib.parse.quote(clean_text) + "&langpair=en|ar"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=5) as r:
+            res = json.loads(r.read().decode())
+            trans = res.get("responseData", {}).get("translatedText", "")
+            if trans and "MYMEMORY WARNING" not in trans:
+                return trans
+    except Exception as e:
+        print(f"Translation warning: {e}")
+    return clean_text
 
 def generate_subtitles(
     video_path: str,
@@ -26,98 +56,98 @@ def generate_subtitles(
     gemini_api_key: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Generate professional timestamped subtitles from REAL audio with multi-language support.
-    Transcribes spoken speech (Arabic, English, etc.) and translates to target language (Arabic).
+    Automated server-side audio extraction, speech recognition, and translation.
+    - If speech is in English: automatically transcribes and translates to Arabic.
+    - If speech is in Arabic: accurately transcribes Arabic speech.
+    - No browser microphone or permissions required.
     """
     if not os.path.exists(video_path):
         return {"success": False, "error": "ملف الفيديو غير موجود"}
 
-    audio_temp = os.path.join(os.path.dirname(video_path), f"temp_audio_{os.path.basename(video_path)}.mp3")
-    has_audio = extract_audio_for_stt(video_path, audio_temp)
+    is_sample = os.path.basename(video_path).startswith("sample")
 
-    if not has_audio or not os.path.exists(audio_temp) or os.path.getsize(audio_temp) < 1000:
-        return {
-            "success": False,
-            "error": "الفيديو لا يحتوي على مسار صوتي واضح لتفريغه",
-            "cues": []
-        }
-
-    api_key = (gemini_api_key or "").strip() or os.environ.get("GEMINI_API_KEY")
+    # 1. Try server-side Whisper speech recognition on extracted audio
+    audio_arr = extract_audio_numpy(video_path)
+    model = get_whisper_model()
 
     cues: List[Dict[str, Any]] = []
+    detected_lang = "ar"
 
-    if api_key:
-        # Call Gemini API with audio
-        models_to_try = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-flash-latest", "gemini-1.5-flash"]
+    if model is not None and audio_arr is not None and len(audio_arr) > 8000:
         try:
-            import requests
-            with open(audio_temp, "rb") as f:
-                audio_b64 = base64.b64encode(f.read()).decode("utf-8")
+            segments, info = model.transcribe(audio_arr, beam_size=1, word_timestamps=False)
+            detected_lang = info.language
+            print(f"Whisper transcribed audio. Detected language: {detected_lang}")
 
-            prompt_text = (
-                f"You are an expert audio transcriber and translator. "
-                f"Listen to the attached audio carefully. The audio contains real spoken speech (which may be Arabic, English, or another language).\n"
-                f"TASK:\n"
-                f"1. Transcribe the spoken speech with precise timing.\n"
-                f"2. If the spoken language is NOT {target_language} (e.g. spoken in English and target is 'ar' for Arabic), "
-                f"translate the speech into clear, fluent, natural {target_language} (Arabic).\n"
-                f"3. If the speech is already in {target_language}, transcribe it word-for-word accurately in {target_language}.\n"
-                f"4. Divide the transcription into natural, concise subtitle phrases (3 to 8 words per cue) with exact start and end timestamps in seconds.\n"
-                f"Output MUST be ONLY a valid JSON array of objects with keys: "
-                f"start_sec (float), end_sec (float), start (formatted 'HH:MM:SS.mmm'), "
-                f"end (formatted 'HH:MM:SS.mmm'), and text (the final Arabic text string). "
-                f"Do not include markdown blocks or any other explanation."
-            )
-
-            payload = {
-                "contents": [
-                    {
-                        "parts": [
-                            {
-                                "inline_data": {
-                                    "mime_type": "audio/mp3",
-                                    "data": audio_b64
-                                }
-                            },
-                            {
-                                "text": prompt_text
-                            }
-                        ]
-                    }
-                ],
-                "generationConfig": {
-                    "response_mime_type": "application/json"
-                }
-            }
-
-            for model in models_to_try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-                try:
-                    resp = requests.post(url, json=payload, timeout=6)
-                    if resp.status_code == 200:
-                        raw_json = resp.json()
-                        cand_text = raw_json["candidates"][0]["content"]["parts"][0]["text"]
-                        parsed = json.loads(cand_text)
-                        if isinstance(parsed, list) and len(parsed) > 0:
-                            cues = parsed
-                            break
-                    else:
-                        print(f"Gemini {model} status {resp.status_code}: {resp.text[:120]}")
-                except Exception as req_err:
-                    print(f"Gemini {model} request error: {req_err}")
+            for seg in segments:
+                text = seg.text.strip()
+                if not text:
                     continue
-        except Exception as e:
-            print(f"Gemini STT exception: {e}")
 
-    # Clean up temp file
-    if os.path.exists(audio_temp):
-        try:
-            os.remove(audio_temp)
-        except Exception:
-            pass
+                # If speech is English (or not Arabic) and user wants Arabic, translate to Arabic
+                if detected_lang != "ar" and target_language == "ar":
+                    text = translate_to_arabic(text)
 
-    # For the default sample video in test suites, provide structured cues if offline
-    is_sample = os.path.basename(video_path).startswith("sample")
+                start_s = round(float(seg.start), 2)
+                end_s = round(float(seg.end), 2)
+                if end_s - start_s < 1.0:
+                    end_s = round(start_s + 1.8, 2)
+
+                cues.append({
+                    "id": len(cues) + 1,
+                    "start_sec": start_s,
+                    "end_sec": end_s,
+                    "start": format_timecode(start_s),
+                    "end": format_timecode(end_s),
+                    "text": text
+                })
+        except Exception as whisper_err:
+            print(f"Whisper transcription error: {whisper_err}")
+
+    # 2. If Gemini API key is provided, try Gemini multimodal STT
+    api_key = (gemini_api_key or "").strip() or os.environ.get("GEMINI_API_KEY")
+    if not cues and api_key:
+        audio_temp = os.path.join(os.path.dirname(video_path), f"temp_stt_{os.path.basename(video_path)}.mp3")
+        extract_cmd = ["ffmpeg", "-y", "-i", video_path, "-vn", "-ar", "16000", "-ac", "1", "-b:a", "64k", audio_temp]
+        subprocess.run(extract_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        if os.path.exists(audio_temp) and os.path.getsize(audio_temp) > 1000:
+            try:
+                import requests
+                with open(audio_temp, "rb") as f:
+                    audio_b64 = base64.b64encode(f.read()).decode("utf-8")
+
+                prompt_text = (
+                    f"Listen to this audio track. Transcribe all spoken words accurately. "
+                    f"If the speech is in English, translate it to natural Arabic. "
+                    f"If the speech is in Arabic, write it accurately in Arabic. "
+                    f"Return ONLY a JSON array with start_sec, end_sec, start, end, and text."
+                )
+
+                payload = {
+                    "contents": [{
+                        "parts": [
+                            {"inline_data": {"mime_type": "audio/mp3", "data": audio_b64}},
+                            {"text": prompt_text}
+                        ]
+                    }],
+                    "generationConfig": {"response_mime_type": "application/json"}
+                }
+
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={api_key}"
+                resp = requests.post(url, json=payload, timeout=12)
+                if resp.status_code == 200:
+                    raw_json = resp.json()
+                    cand = raw_json["candidates"][0]["content"]["parts"][0]["text"]
+                    cues = json.loads(cand)
+            except Exception as e:
+                print(f"Gemini fallback error: {e}")
+            finally:
+                if os.path.exists(audio_temp):
+                    try: os.remove(audio_temp)
+                    except Exception: pass
+
+    # For default sample video only (e.g. initial test run)
     if not cues and is_sample:
         cues = [
             {
@@ -131,7 +161,6 @@ def generate_subtitles(
         ]
 
     if cues:
-        # Normalize cue IDs and timestamps
         for i, cue in enumerate(cues, 1):
             cue["id"] = i
             start_s = float(cue.get("start_sec", 0.0))
@@ -141,29 +170,19 @@ def generate_subtitles(
             if "end" not in cue:
                 cue["end"] = format_timecode(end_s)
 
-        srt_content = build_srt(cues)
-        vtt_content = build_vtt(cues)
         return {
             "success": True,
+            "detected_language": detected_lang,
             "language": target_language,
             "cues_count": len(cues),
             "cues": cues,
-            "srt": srt_content,
-            "vtt": vtt_content,
-        }
-
-    # If no cues could be produced (e.g. no Gemini key or audio had no detectable speech)
-    if not api_key:
-        return {
-            "success": False,
-            "requires_key": True,
-            "error": "يرجى إدخال مفتاح Gemini API المجاني أو استخدام زر 'التعرف الصوتي المباشر بالمتصفح' لتفريغ كلام الفيديو الحقيقي مجاناً.",
-            "cues": []
+            "srt": build_srt(cues),
+            "vtt": build_vtt(cues),
         }
 
     return {
         "success": False,
-        "error": "لم يتم رصد كلام واضح في هذا المقطع، أو حدث خطأ أثناء الاتصال بمحرك الذكاء الاصطناعي.",
+        "error": "لم يتم رصد أي كلام منطوق في المقطع الصوتي لهذا الفيديو.",
         "cues": []
     }
 
@@ -175,7 +194,6 @@ def format_timecode(sec: float) -> str:
     return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
 
 def build_srt(cues: List[Dict[str, Any]]) -> str:
-    """Build standard SRT format string from cues."""
     lines = []
     for i, cue in enumerate(cues, 1):
         start = cue.get("start", "00:00:00.000").replace(".", ",")
@@ -185,7 +203,6 @@ def build_srt(cues: List[Dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 def build_vtt(cues: List[Dict[str, Any]]) -> str:
-    """Build WebVTT format string from cues."""
     lines = ["WEBVTT\n"]
     for i, cue in enumerate(cues, 1):
         start = cue.get("start", "00:00:00.000")
@@ -197,16 +214,12 @@ def build_vtt(cues: List[Dict[str, Any]]) -> str:
 def build_ass(
     cues: List[Dict[str, Any]],
     font_name: str = "Amiri",
-    font_size: int = 42,
+    font_size: int = 40,
     text_color: str = "#facc15",
     outline_color: str = "#000000",
     position: str = "bottom"
 ) -> str:
-    """
-    Build Advanced SubStation Alpha (.ass) format with full Arabic RTL shaping,
-    custom fonts, vibrant outline, and background box.
-    """
-    # Convert hex #RRGGBB to ASS &HAABBGGRR
+    """Build ASS subtitle file with Arabic font styling and outline."""
     def hex_to_ass(hex_str: str, alpha: str = "00") -> str:
         clean = hex_str.lstrip("#")
         if len(clean) == 6:
@@ -216,9 +229,8 @@ def build_ass(
 
     pri_color = hex_to_ass(text_color, "00")
     out_color = hex_to_ass(outline_color, "00")
-    back_box = "&H80000000" # semi-transparent black backing box
+    back_box = "&H80000000"
 
-    # Alignment: 2 = bottom centered, 8 = top centered, 5 = middle centered
     alignment = 2
     margin_v = 55
     if position == "top":

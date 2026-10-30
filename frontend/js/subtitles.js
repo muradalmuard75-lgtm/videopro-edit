@@ -1,7 +1,9 @@
 /**
- * VideoPro Edit - Subtitles & Multilingual Translation Engine
- * Handles Speech-to-text (Web Speech & Gemini AI), real-time styling,
- * translation, and burning subtitles permanently into the video file.
+ * VideoPro Edit - Automated Server-Side Audio Captioning & Subtitle Engine
+ * 1. Automatically extracts audio track from video on the server.
+ * 2. Transcribes speech (Arabic/English) with precise timestamps.
+ * 3. Translates foreign speech to Arabic.
+ * 4. Burns/hardcodes Arabic subtitles permanently into the MP4 frames.
  */
 class SubtitlesManager {
   constructor() {
@@ -11,12 +13,10 @@ class SubtitlesManager {
     this.activeCueIndex = -1;
     this.styling = {
       fontFamily: "Amiri",
-      fontSize: 36,
+      fontSize: 38,
       textColor: "#facc15",
       position: "bottom",
     };
-    this.isListening = false;
-    this.recognition = null;
 
     this.init();
   }
@@ -28,57 +28,25 @@ class SubtitlesManager {
     const closeBtn = document.getElementById("close-subtitles-modal");
     if (closeBtn) closeBtn.addEventListener("click", () => this.closeModal());
 
-    // Mode Selector Tabs (Browser Web Speech vs Gemini AI)
-    const browserTabBtn = document.getElementById("sub-mode-browser-btn");
-    const geminiTabBtn = document.getElementById("sub-mode-gemini-btn");
-    const browserPanel = document.getElementById("sub-panel-browser");
-    const geminiPanel = document.getElementById("sub-panel-gemini");
-
-    if (browserTabBtn && geminiTabBtn) {
-      browserTabBtn.addEventListener("click", () => {
-        browserTabBtn.className = "flex-1 py-1.5 px-2 rounded-lg font-bold text-center transition bg-purple-600 text-white shadow";
-        geminiTabBtn.className = "flex-1 py-1.5 px-2 rounded-lg font-bold text-center transition text-gray-400 hover:text-white";
-        browserPanel?.classList.remove("hidden");
-        browserPanel?.classList.add("flex");
-        geminiPanel?.classList.add("hidden");
-        geminiPanel?.classList.remove("flex");
-      });
-
-      geminiTabBtn.addEventListener("click", () => {
-        geminiTabBtn.className = "flex-1 py-1.5 px-2 rounded-lg font-bold text-center transition bg-blue-600 text-white shadow";
-        browserTabBtn.className = "flex-1 py-1.5 px-2 rounded-lg font-bold text-center transition text-gray-400 hover:text-white";
-        geminiPanel?.classList.remove("hidden");
-        geminiPanel?.classList.add("flex");
-        browserPanel?.classList.add("hidden");
-        browserPanel?.classList.remove("flex");
-      });
+    // 1. MAIN ONE-CLICK BUTTON: Auto-Caption & Burn Directly into Video
+    const autoCaptionBtn = document.getElementById("auto-caption-and-burn-btn");
+    if (autoCaptionBtn) {
+      autoCaptionBtn.addEventListener("click", () => this.autoCaptionAndBurn());
     }
 
-    // Load persisted Gemini API Key
-    const keyInput = document.getElementById("gemini-api-key-input");
-    if (keyInput) {
-      const savedKey = localStorage.getItem("videopro_gemini_key") || "";
-      if (savedKey) keyInput.value = savedKey;
-      keyInput.addEventListener("input", (e) => {
-        localStorage.setItem("videopro_gemini_key", e.target.value.trim());
-      });
+    // 2. Extract Cues Only (for manual inspection/editing before burning)
+    const extractCuesBtn = document.getElementById("extract-cues-only-btn");
+    if (extractCuesBtn) {
+      extractCuesBtn.addEventListener("click", () => this.extractCuesOnly());
     }
 
-    // Start / Stop Browser Speech Recognition Buttons
-    const startRecBtn = document.getElementById("start-speech-rec-btn");
-    const stopRecBtn = document.getElementById("stop-speech-rec-btn");
-    if (startRecBtn) startRecBtn.addEventListener("click", () => this.startBrowserSpeechRecognition());
-    if (stopRecBtn) stopRecBtn.addEventListener("click", () => this.stopBrowserSpeechRecognition());
+    // 3. Add Manual Cue
+    const addCueBtn = document.getElementById("add-manual-cue-btn");
+    if (addCueBtn) {
+      addCueBtn.addEventListener("click", () => this.addManualCue());
+    }
 
-    // Generate Subtitles Button (Gemini AI)
-    const genBtn = document.getElementById("generate-subtitles-btn");
-    if (genBtn) genBtn.addEventListener("click", () => this.generateGeminiSubtitles());
-
-    // Burn Subtitles Button (Hardcode into MP4 frames)
-    const burnBtn = document.getElementById("burn-subtitles-btn");
-    if (burnBtn) burnBtn.addEventListener("click", () => this.burnSubtitlesIntoVideo());
-
-    // Preview Subtitles on Screen Button
+    // 4. Preview Overlay on Screen
     const previewBtn = document.getElementById("preview-subtitles-overlay-btn");
     if (previewBtn) {
       previewBtn.addEventListener("click", () => {
@@ -89,14 +57,10 @@ class SubtitlesManager {
           video.play().catch(() => {});
         }
         if (window.timelineInstance) {
-          window.timelineInstance.showToast("👁️ يتم الآن تشغيل الفيديو مع ظهور الترجمة على الشاشة");
+          window.timelineInstance.showToast("👁️ يتم الآن تشغيل الفيديو مع عرض الترجمة على الشاشة");
         }
       });
     }
-
-    // Add manual cue button
-    const addCueBtn = document.getElementById("add-manual-cue-btn");
-    if (addCueBtn) addCueBtn.addEventListener("click", () => this.addManualCue());
 
     // Styling listeners
     const fontSelect = document.getElementById("sub-font-select");
@@ -127,7 +91,7 @@ class SubtitlesManager {
     const sizeVal = document.getElementById("sub-size-val");
     if (sizeRange) {
       sizeRange.addEventListener("input", (e) => {
-        this.styling.fontSize = parseInt(e.target.value, 10) || 36;
+        this.styling.fontSize = parseInt(e.target.value, 10) || 38;
         if (sizeVal) sizeVal.innerText = this.styling.fontSize;
         this.applySubtitleStyling();
       });
@@ -159,9 +123,6 @@ class SubtitlesManager {
   }
 
   closeModal() {
-    if (this.isListening) {
-      this.stopBrowserSpeechRecognition();
-    }
     if (!this.modal) return;
     this.modal.classList.add("hidden");
     this.modal.classList.remove("flex");
@@ -202,265 +163,102 @@ class SubtitlesManager {
   }
 
   /**
-   * 1. Browser Speech Recognition (Web Speech API)
-   * 100% Free, runs in client browser (Chrome/Edge/Android), zero server costs.
+   * Automated All-in-One:
+   * 1. Extracts audio track directly on server.
+   * 2. Reads & translates speech into Arabic.
+   * 3. Burns Arabic captions directly into the MP4 frames.
    */
-  startBrowserSpeechRecognition() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const statusText = document.getElementById("subtitles-status-text");
-
-    if (!SpeechRecognition) {
-      if (statusText) {
-        statusText.innerText = "متصفحك لا يدعم التعرف الصوتي المباشر. يرجى استخدام متصفح Chrome أو إدخال مفتاح Gemini المجاني.";
-      }
-      return;
-    }
-
-    const video = document.getElementById("main-video");
-    if (!video) return;
-
-    const speechLangSelect = document.getElementById("sub-speech-lang-select");
-    const chosenLang = speechLangSelect ? speechLangSelect.value : "ar-SA";
-
-    try {
-      this.recognition = new SpeechRecognition();
-      this.recognition.continuous = true;
-      this.recognition.interimResults = false;
-      this.recognition.lang = chosenLang;
-
-      const startRecBtn = document.getElementById("start-speech-rec-btn");
-      const stopRecBtn = document.getElementById("stop-speech-rec-btn");
-      const speechLabel = document.getElementById("speech-rec-label");
-      const speechIcon = document.getElementById("speech-rec-icon");
-
-      this.isListening = true;
-      if (startRecBtn) startRecBtn.classList.add("hidden");
-      if (stopRecBtn) stopRecBtn.classList.remove("hidden");
-      if (speechIcon) speechIcon.innerText = "🔴";
-      if (statusText) statusText.innerText = "🔴 جاري الاستماع إلى كلام الفيديو وتحويله إلى نصوص...";
-
-      // Clear existing cues for fresh transcription
-      this.cues = [];
-      this.renderCuesList();
-
-      // Start playing video from the beginning with volume unmuted
-      video.currentTime = 0;
-      video.muted = false;
-      video.volume = 1.0;
-      video.play().catch(() => {});
-
-      let lastStartTime = 0.0;
-
-      this.recognition.onresult = async (event) => {
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            let spokenText = event.results[i][0].transcript.trim();
-            if (!spokenText) continue;
-
-            const currentSec = Math.max(0.5, video.currentTime);
-            const cueStart = Math.max(0.0, lastStartTime);
-            const cueEnd = currentSec;
-            lastStartTime = currentSec;
-
-            // If audio was English, translate to Arabic in real time
-            if (chosenLang.startsWith("en")) {
-              try {
-                const transRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(spokenText)}&langpair=en|ar`);
-                const transData = await transRes.json();
-                if (transData?.responseData?.translatedText) {
-                  spokenText = transData.responseData.translatedText;
-                }
-              } catch (e) {
-                console.warn("Translation fallback error:", e);
-              }
-            }
-
-            this.cues.push({
-              id: this.cues.length + 1,
-              start_sec: parseFloat(cueStart.toFixed(2)),
-              end_sec: parseFloat(cueEnd.toFixed(2)),
-              start: this.formatTimecode(cueStart),
-              end: this.formatTimecode(cueEnd),
-              text: spokenText,
-            });
-
-            this.renderCuesList();
-            this.updateTimelineSubtitleBlocks();
-            if (statusText) statusText.innerText = `تم استخراج ${this.cues.length} أسطر كلام متزامنة بنجاح!`;
-          }
-        }
-      };
-
-      this.recognition.onerror = (e) => {
-        console.warn("Speech recognition error:", e);
-        if (e.error === "no-speech") return;
-        if (statusText) statusText.innerText = `تنبيه في التعرف الصوتي: ${e.error}`;
-      };
-
-      this.recognition.onend = () => {
-        if (this.isListening) {
-          // If video still playing, restart recognition
-          if (!video.paused && !video.ended) {
-            try { this.recognition.start(); } catch (err) {}
-          } else {
-            this.stopBrowserSpeechRecognition();
-          }
-        }
-      };
-
-      video.onended = () => {
-        this.stopBrowserSpeechRecognition();
-      };
-
-      this.recognition.start();
-    } catch (err) {
-      if (statusText) statusText.innerText = `خطأ في بدء التعرف الصوتي: ${err.message}`;
-      this.stopBrowserSpeechRecognition();
-    }
-  }
-
-  stopBrowserSpeechRecognition() {
-    this.isListening = false;
-    if (this.recognition) {
-      try { this.recognition.stop(); } catch (e) {}
-      this.recognition = null;
-    }
-
-    const startRecBtn = document.getElementById("start-speech-rec-btn");
-    const stopRecBtn = document.getElementById("stop-speech-rec-btn");
-    const speechIcon = document.getElementById("speech-rec-icon");
-    const statusText = document.getElementById("subtitles-status-text");
-
-    if (startRecBtn) startRecBtn.classList.remove("hidden");
-    if (stopRecBtn) stopRecBtn.classList.add("hidden");
-    if (speechIcon) speechIcon.innerText = "🎙️";
-
-    if (statusText && this.cues.length > 0) {
-      statusText.innerText = `✅ اكتمل التفريغ! تم تسجيل ${this.cues.length} سطر كلام. يمكنك التعديل عليها أو حرقها داخل الفيديو الآن.`;
-    }
-  }
-
-  /**
-   * 2. Gemini AI Speech-to-Text & Translation
-   * State-of-the-art multilingual audio comprehension and translation.
-   */
-  async generateGeminiSubtitles() {
-    if (!window.currentVideoId) {
-      if (window.timelineInstance) window.timelineInstance.showToast("⚠️ يرجى رفع فيديو أولاً للبدء");
-      this.closeModal();
-      document.getElementById("video-file-input")?.click();
-      return;
-    }
-
-    const langSelect = document.getElementById("sub-lang-select");
-    const targetLang = langSelect ? langSelect.value : "ar";
-    const vidId = window.currentVideoId;
-
-    const keyInput = document.getElementById("gemini-api-key-input");
-    const geminiKey = keyInput ? keyInput.value.trim() : (localStorage.getItem("videopro_gemini_key") || "");
-
-    if (window.tasksManager) {
-      window.tasksManager.runBackgroundTask({
-        type: "subtitles",
-        title: `تفريغ وترجمة بالذكاء الاصطناعي (${targetLang === "ar" ? "العربية" : targetLang})`,
-        icon: "✨",
-        dismissModalId: "subtitles-modal",
-        apiCall: async () => {
-          const formData = new FormData();
-          formData.append("video_id", vidId);
-          formData.append("language", targetLang);
-          if (geminiKey) formData.append("gemini_key", geminiKey);
-
-          const resp = await fetch("/api/video/subtitles", {
-            method: "POST",
-            body: formData,
-          });
-          const data = await resp.json();
-          if (!resp.ok || data.error) {
-            throw new Error(data.error || "فشل تفريغ الترجمة بالذكاء الاصطناعي");
-          }
-          return data;
-        },
-        onSuccess: (data) => {
-          this.cues = data.cues || [];
-          this.renderCuesList();
-          this.updateTimelineSubtitleBlocks();
-
-          const statusText = document.getElementById("subtitles-status-text");
-          if (statusText) {
-            statusText.innerText = `🎉 تم استخراج ${this.cues.length} سطر ترجمة بنجاح! يمكنك الآن حرقها داخل الفيديو.`;
-          }
-          if (window.timelineInstance) {
-            window.timelineInstance.showToast(`✨ تم استخراج ${this.cues.length} أسطر ترجمة بالذكاء الاصطناعي!`);
-          }
-        },
-      });
-      return;
-    }
-  }
-
-  /**
-   * 3. Burn Subtitles permanently into MP4 frames ("ويحطو بالفيديو")
-   */
-  async burnSubtitlesIntoVideo() {
+  async autoCaptionAndBurn() {
     if (!window.currentVideoId) {
       if (window.timelineInstance) window.timelineInstance.showToast("⚠️ يرجى رفع فيديو أولاً");
       return;
     }
 
-    if (!this.cues || this.cues.length === 0) {
-      const statusText = document.getElementById("subtitles-status-text");
-      if (statusText) statusText.innerText = "⚠️ يرجى تفريغ كلام الفيديو أولاً أو إضافة أسطر ترجمة قبل الحرق.";
-      if (window.timelineInstance) window.timelineInstance.showToast("⚠️ لا توجد أسطر ترجمة لحرقها داخل الفيديو");
-      return;
-    }
-
     const vidId = window.currentVideoId;
     const fontName = this.styling.fontFamily || "Amiri";
-    const fontSize = this.styling.fontSize || 36;
+    const fontSize = this.styling.fontSize || 38;
     const textColor = this.styling.textColor || "#facc15";
     const position = this.styling.position || "bottom";
-    const cuesJson = JSON.stringify(this.cues);
 
     if (window.tasksManager) {
       window.tasksManager.runBackgroundTask({
-        type: "burn_subtitles",
-        title: `حرق وتثبيت الترجمة داخل الفيديو (${this.cues.length} سطر)`,
-        icon: "🎬",
+        type: "autocaption",
+        title: "سحب الصوت وترجمته وكتابته داخل الفيديو 🎬",
+        icon: "🎙️",
         dismissModalId: "subtitles-modal",
         apiCall: async () => {
           const formData = new FormData();
           formData.append("video_id", vidId);
-          formData.append("cues_json", cuesJson);
+          formData.append("target_language", "ar");
           formData.append("font_name", fontName);
           formData.append("font_size", fontSize);
           formData.append("text_color", textColor);
           formData.append("position", position);
 
-          const resp = await fetch("/api/video/burn-subtitles", {
+          const resp = await fetch("/api/video/auto-caption-and-burn", {
             method: "POST",
             body: formData,
           });
           const data = await resp.json();
           if (!resp.ok || data.error) {
-            throw new Error(data.error || "فشل حرق الترجمة داخل الفيديو");
+            throw new Error(data.detail || data.error || "فشل استخراج الصوت وكتابة الترجمة");
           }
           return data;
         },
         onSuccess: (data) => {
+          // Load new subtitled video into player
           if (window.playerInstance && data.url) {
             window.playerInstance.loadVideo(data.url, data.video_id);
           }
-          // Hide text overlay since subtitles are now permanently inside video frames
+          // Update cues and timeline track
+          this.cues = data.cues || [];
+          this.renderCuesList();
+          this.updateTimelineSubtitleBlocks();
+
+          // Hide text overlay since subtitles are now permanently burned inside the video
           if (this.subtitlesOverlay) {
             this.subtitlesOverlay.classList.add("hidden");
             this.subtitlesOverlay.innerText = "";
           }
+
           if (window.timelineInstance) {
-            window.timelineInstance.showToast("🎉 تم حرق وتثبيت الترجمة داخل الفيديو بنجاح!");
+            window.timelineInstance.showToast("🎉 تم سحب الصوت وكتابة الترجمة داخل الفيديو بنجاح!");
           }
         },
       });
+    }
+  }
+
+  /**
+   * Extract Cues Only (without burning yet) for inspection or editing
+   */
+  async extractCuesOnly() {
+    if (!window.currentVideoId) return;
+    const vidId = window.currentVideoId;
+    const statusText = document.getElementById("subtitles-status-text");
+
+    if (statusText) statusText.innerText = "⏳ جاري سحب مقطع الصوت واستخراج نصوص الكلام...";
+
+    try {
+      const formData = new FormData();
+      formData.append("video_id", vidId);
+      formData.append("language", "ar");
+
+      const resp = await fetch("/api/video/subtitles", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data.success) {
+        throw new Error(data.error || "لم يتم رصد كلام واضح في مقطع الصوت");
+      }
+
+      this.cues = data.cues || [];
+      this.renderCuesList();
+      this.updateTimelineSubtitleBlocks();
+      if (statusText) statusText.innerText = `✅ تم استخراج ${this.cues.length} سطر كلام بنجاح! اضغط الزر الرئيسي بالأعلى لحرقها داخل الفيديو.`;
+    } catch (err) {
+      if (statusText) statusText.innerText = `⚠️ ${err.message}`;
     }
   }
 
@@ -476,7 +274,7 @@ class SubtitlesManager {
       end_sec: endSec,
       start: this.formatTimecode(startSec),
       end: this.formatTimecode(endSec),
-      text: "اكتب نص الترجمة هنا...",
+      text: "اكتب النص هنا...",
     });
 
     this.renderCuesList();
@@ -497,8 +295,8 @@ class SubtitlesManager {
 
     if (this.cues.length === 0) {
       cuesList.innerHTML = `
-        <div class="text-center text-gray-500 text-xs py-4">
-          لا توجد أسطر ترجمة حالياً. اضغط "بدء الاستماع" أو "تفريغ بالذكاء الاصطناعي" لتفريغ كلام الفيديو.
+        <div class="text-center text-gray-500 text-xs py-3">
+          اضغط الزر الرئيسي بالأعلى ليقوم السيرفر بسحب الصوت وترجمته وحرقه بالفيديو مباشرة!
         </div>
       `;
       return;
@@ -507,13 +305,13 @@ class SubtitlesManager {
     cuesList.innerHTML = "";
     this.cues.forEach((cue, idx) => {
       const item = document.createElement("div");
-      item.className = "p-2.5 rounded-lg bg-gray-900 border border-gray-800 text-xs flex flex-col gap-1.5 transition hover:border-purple-500/50";
+      item.className = "p-2 rounded-lg bg-gray-900 border border-gray-800 text-xs flex flex-col gap-1 transition hover:border-purple-500/50";
       item.innerHTML = `
         <div class="flex items-center justify-between text-gray-400 font-mono text-[11px]">
           <span class="text-purple-400 font-bold">#${idx + 1}</span>
           <div class="flex items-center gap-2">
             <span>${cue.start} ➜ ${cue.end}</span>
-            <button type="button" class="text-red-400 hover:text-red-300 text-sm px-1" title="حذف هذا السطر" onclick="window.subtitlesInstance.removeCue(${idx})">🗑️</button>
+            <button type="button" class="text-red-400 hover:text-red-300 text-sm px-1" title="حذف" onclick="window.subtitlesInstance.removeCue(${idx})">🗑️</button>
           </div>
         </div>
         <input type="text" value="${cue.text.replace(/"/g, '&quot;')}" class="w-full bg-black/60 border border-gray-700/80 rounded px-2.5 py-1 text-gray-100 font-medium text-xs focus:border-purple-500 focus:outline-none" oninput="window.updateCueText(${idx}, this.value)" />
@@ -521,7 +319,6 @@ class SubtitlesManager {
       cuesList.appendChild(item);
     });
 
-    // Update SRT download button if cues exist
     const dlSrt = document.getElementById("download-srt-btn");
     if (dlSrt) {
       const srtText = this.buildSrtClient(this.cues);
