@@ -1,4 +1,5 @@
 import os
+import time
 import uuid
 import shutil
 from typing import Optional
@@ -6,6 +7,8 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+
+DEPLOY_TIMESTAMP = int(time.time())
 
 from video_engine import (
     get_video_info,
@@ -35,6 +38,34 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def add_no_cache_headers(request, call_next):
+    response = await call_next(request)
+    # Eradicate caching on mobile and desktop browsers so updates appear instantly
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    if request.url.path == "/" or request.url.path.endswith(".html"):
+        response.headers["Clear-Site-Data"] = '"cache"'
+    if "etag" in response.headers:
+        del response.headers["etag"]
+    if "last-modified" in response.headers:
+        del response.headers["last-modified"]
+    return response
+
+
+@app.get("/api/version")
+async def get_version():
+    return JSONResponse(
+        content={"version": DEPLOY_TIMESTAMP},
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
 
 def resolve_video_path(video_id: str) -> str:
     """Resolve video_id to actual file on disk."""
@@ -269,12 +300,25 @@ async def download_export(filename: str):
 if os.path.exists(FRONTEND_DIR):
     app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def root():
     index_path = os.path.join(FRONTEND_DIR, "index.html")
     if os.path.exists(index_path):
         with open(index_path, "r", encoding="utf-8") as f:
-            return HTMLResponse(f.read())
+            content = f.read()
+        # Dynamic cache-busting timestamp injected into scripts and stylesheets
+        cache_buster = f"?v={int(time.time())}"
+        content = content.replace('.js"', f'.js{cache_buster}"').replace('.css"', f'.css{cache_buster}"')
+        content = content.replace("BUILD_TIMESTAMP_PLACEHOLDER", str(DEPLOY_TIMESTAMP))
+        return HTMLResponse(
+            content=content,
+            headers={
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0",
+                "Pragma": "no-cache",
+                "Expires": "0",
+                "Clear-Site-Data": '"cache"',
+            },
+        )
     return HTMLResponse("<h1>VideoPro Edit Backend Active</h1>")
 
 if __name__ == "__main__":

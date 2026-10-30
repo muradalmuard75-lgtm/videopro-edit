@@ -4,6 +4,48 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>VideoPro Edit - محرر الفيديو الشامل وأداة التقطيع الذكية</title>
+  
+  <!-- Aggressive Cache Prevention -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
+  <script>
+    // Clean up any stale service workers or browser caches automatically
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (var r of registrations) { r.unregister(); }
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (var n of names) { caches.delete(n); }
+      });
+    }
+
+    // Auto-detect new deployments and reload instantly without user intervention
+    window.__APP_VERSION__ = "BUILD_TIMESTAMP_PLACEHOLDER";
+    function checkLiveVersion() {
+      fetch('/api/version?_t=' + Date.now(), { cache: 'no-store' })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data && data.version) {
+            if (window.__SERVER_VERSION__ && data.version > window.__SERVER_VERSION__) {
+              console.log("New version detected, updating immediately...");
+              window.location.reload();
+            }
+            window.__SERVER_VERSION__ = data.version;
+          }
+        })
+        .catch(function() {});
+    }
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible') checkLiveVersion();
+    });
+    window.addEventListener('focus', checkLiveVersion);
+    setInterval(checkLiveVersion, 15000);
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238b5cf6'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>">
