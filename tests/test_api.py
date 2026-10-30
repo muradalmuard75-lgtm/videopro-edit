@@ -239,5 +239,90 @@ class TestVideoProSuite(unittest.TestCase):
         self.assertTrue(res_del.json().get("success"))
         self.assertTrue(res_del.json().get("deleted"))
 
+    def test_youtube_url_validator(self):
+        from video_engine import is_valid_youtube_url
+        valid_urls = [
+            "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "http://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "https://youtu.be/dQw4w9WgXcQ",
+            "https://www.youtube.com/shorts/3Z0o7o0jT9s",
+            "https://youtube.com/shorts/3Z0o7o0jT9s?feature=share",
+            "https://m.youtube.com/watch?v=dQw4w9WgXcQ",
+            "www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "youtu.be/dQw4w9WgXcQ?si=abcdef12345",
+        ]
+        for u in valid_urls:
+            self.assertTrue(is_valid_youtube_url(u), f"Failed for {u}")
+
+        invalid_urls = [
+            "https://vimeo.com/12345678",
+            "https://tiktok.com/@user/video/123",
+            "https://google.com",
+            "",
+            None,
+            "not a url"
+        ]
+        for u in invalid_urls:
+            self.assertFalse(is_valid_youtube_url(u), f"Should be invalid for {u}")
+
+    def test_youtube_import_endpoint_validation(self):
+        # 1. Test missing URL
+        res_empty = client.post("/api/video/import-youtube", data={"url": ""})
+        self.assertEqual(res_empty.status_code, 400)
+
+        # 2. Test invalid URL format
+        res_inv = client.post("/api/video/import-youtube", data={"url": "https://unknown-domain.org/video"})
+        self.assertEqual(res_inv.status_code, 400)
+        self.assertIn("رابط YouTube غير صالح", res_inv.json()["detail"])
+
+    def test_youtube_import_mocked_success(self):
+        from unittest.mock import patch
+        mock_result = {
+            "success": True,
+            "video_id": "yt_sample12345.mp4",
+            "filename": "Sample_YouTube_Video.mp4",
+            "title": "Sample YouTube Video",
+            "preview_url": "/api/video/stream/yt_sample12345.mp4",
+            "info": {
+                "duration": 45.0,
+                "width": 1280,
+                "height": 720,
+                "formatted_duration": "00:45",
+                "resolution": "720p HD"
+            }
+        }
+        with patch("app.download_youtube_video", return_value=mock_result):
+            res = client.post("/api/video/import-youtube", data={
+                "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                "quality": "720p"
+            })
+            self.assertEqual(res.status_code, 200)
+            data = res.json()
+            self.assertTrue(data.get("success"))
+            self.assertEqual(data.get("video_id"), "yt_sample12345.mp4")
+            self.assertEqual(data.get("title"), "Sample YouTube Video")
+            self.assertIn("info", data)
+
+    def test_subtitles_speed_and_accuracy(self):
+        # Verify subtitle endpoint returns within seconds and produces valid cues
+        res = client.post("/api/video/subtitles", data={
+            "video_id": "sample",
+            "language": "ar",
+            "chunk_reels": "true",
+            "max_words": 4
+        })
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data.get("success"))
+        cues = data.get("cues", [])
+        self.assertIsInstance(cues, list)
+        self.assertGreater(len(cues), 0)
+        for cue in cues:
+            self.assertIn("text", cue)
+            self.assertIn("start", cue)
+            self.assertIn("end", cue)
+            self.assertLessEqual(len(cue["text"].split()), 5)
+
 if __name__ == "__main__":
     unittest.main()
+

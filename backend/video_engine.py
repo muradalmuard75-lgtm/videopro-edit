@@ -847,3 +847,104 @@ def burn_subtitles_into_video(
     }
 
 
+def is_valid_youtube_url(url: str) -> bool:
+    """Validate whether input string is a valid YouTube video or Shorts URL."""
+    if not url or not isinstance(url, str):
+        return False
+    clean = url.strip()
+    if not clean.startswith(("http://", "https://")):
+        clean = "https://" + clean
+    # Support youtube.com/watch?v=..., youtu.be/..., youtube.com/shorts/..., m.youtube.com, etc.
+    youtube_regex = (
+        r'^(https?://)?(www\.|m\.)?'
+        r'(youtube\.com/(watch\?.*v=|shorts/|embed/|v/|live/)|youtu\.be/)'
+        r'([a-zA-Z0-9_-]{6,})'
+    )
+    return bool(re.search(youtube_regex, clean))
+
+
+def download_youtube_video(
+    url: str,
+    output_dir: str,
+    quality: str = "720p"
+) -> Dict[str, Any]:
+    """
+    Download any YouTube video (Standard watch videos, Shorts, mobile links) via yt-dlp.
+    Capped to 720p or 1080p for high performance and bandwidth efficiency.
+    Produces web-optimized MP4 with faststart flags.
+    """
+    import yt_dlp
+    import uuid
+
+    clean_url = url.strip()
+    if not clean_url.startswith(("http://", "https://")):
+        clean_url = "https://" + clean_url
+
+    os.makedirs(output_dir, exist_ok=True)
+    video_id = f"yt_{uuid.uuid4().hex[:10]}"
+    target_basename = video_id
+    out_tmpl = os.path.join(output_dir, f"{target_basename}.%(ext)s")
+
+    max_height = 1080 if str(quality).lower() == "1080p" else 720
+
+    # Format selector prioritizing standard MP4 video + M4A audio within max_height
+    format_selector = (
+        f"bestvideo[height<={max_height}][ext=mp4]+bestaudio[ext=m4a]/"
+        f"bestvideo[height<={max_height}]+bestaudio/"
+        f"best[height<={max_height}][ext=mp4]/"
+        f"best[height<={max_height}]/"
+        f"best"
+    )
+
+    ydl_opts = {
+        'format': format_selector,
+        'outtmpl': out_tmpl,
+        'merge_output_format': 'mp4',
+        'noplaylist': True,
+        'quiet': True,
+        'no_warnings': True,
+        'socket_timeout': 30,
+        'postprocessor_args': {
+            'ffmpeg': ['-movflags', '+faststart']
+        }
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info_dict = ydl.extract_info(clean_url, download=True)
+        if not info_dict:
+            raise ValueError("فشل استخراج معلومات الفيديو من YouTube")
+
+        raw_title = info_dict.get("title") or "YouTube Video"
+        safe_title = re.sub(r'[\\/*?:"<>|]', "", raw_title).strip() or "youtube_video"
+
+    expected_mp4 = os.path.join(output_dir, f"{target_basename}.mp4")
+
+    # If the merged file has a different extension (e.g. .mkv, .webm), remux to .mp4
+    if not os.path.exists(expected_mp4):
+        candidates = [f for f in os.listdir(output_dir) if f.startswith(target_basename)]
+        if not candidates:
+            raise FileNotFoundError("لم يتم العثور على ملف الفيديو بعد التنزيل")
+        downloaded = os.path.join(output_dir, candidates[0])
+        remux_cmd = [
+            "ffmpeg", "-nostdin", "-y", "-i", downloaded,
+            "-c", "copy", "-movflags", "+faststart", expected_mp4
+        ]
+        subprocess.run(remux_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        try:
+            if downloaded != expected_mp4 and os.path.exists(downloaded):
+                os.remove(downloaded)
+        except Exception:
+            pass
+
+    info = get_video_info(expected_mp4)
+    return {
+        "success": True,
+        "video_id": f"{target_basename}.mp4",
+        "filename": f"{safe_title}.mp4",
+        "title": raw_title,
+        "preview_url": f"/api/video/stream/{target_basename}.mp4",
+        "info": info
+    }
+
+
+

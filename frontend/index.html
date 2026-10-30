@@ -76,6 +76,10 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
         الرئيسية
       </button>
+      <button id="nav-youtube-btn" class="flex items-center gap-1.5 px-3.5 py-2 text-red-300 hover:text-white font-bold text-sm transition rounded-lg hover:bg-red-950/50 cursor-pointer border border-red-500/40 hover:border-red-500/80 bg-red-950/20" title="استيراد فيديو من YouTube (عادي أو Shorts)">
+        <svg class="w-4 h-4 fill-current text-red-500" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+        <span>استيراد YouTube 🔗</span>
+      </button>
       <button id="tasks-drawer-btn" class="flex items-center gap-1.5 px-3.5 py-2 text-gray-200 hover:text-white font-medium text-sm transition rounded-lg hover:bg-purple-900/40 cursor-pointer border border-transparent hover:border-purple-500/50 bg-transparent relative">
         <span class="text-sm">📋</span>
         <span>مربع المهام</span>
@@ -95,6 +99,9 @@
 
     <!-- Mobile Header Quick Actions (Touch friendly on mobile) -->
     <div class="flex lg:hidden items-center gap-1 sm:gap-1.5 text-xs">
+      <button id="mobile-nav-youtube-btn" class="px-2 sm:px-2.5 py-1 rounded-lg bg-red-950/50 hover:bg-red-900/60 text-red-300 text-[11px] font-bold border border-red-500/50 cursor-pointer flex items-center gap-1" title="استيراد فيديو من YouTube">
+        <span>▶️ YouTube</span>
+      </button>
       <button id="mobile-tasks-drawer-btn" class="px-2 sm:px-2.5 py-1 rounded-lg bg-purple-900/40 hover:bg-purple-800/50 text-purple-200 text-[11px] font-bold border border-purple-500/60 cursor-pointer flex items-center gap-1" title="مربع المهام والعمليات">
         <span>📋 المهام</span>
         <span id="mobile-tasks-header-badge" class="hidden px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-400 text-black">0</span>
@@ -109,6 +116,7 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </button>
     </div>
+
 
     <!-- Left side: Login & User Profile -->
     <div class="flex items-center gap-2 sm:gap-3">
@@ -156,18 +164,44 @@
           <p class="text-xs sm:text-sm text-gray-400 mt-1.5 max-w-md leading-relaxed">
             اسحب ملف الفيديو وأفلته هنا، أو اضغط على الزر أدناه لاختيار فيديو من هاتفك أو جهازك
           </p>
-          <button id="empty-state-upload-btn" class="mt-4 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-xl shadow-purple-600/30 transition transform hover:scale-105 active:scale-95 cursor-pointer">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-            <span>اختيار فيديو من الجهاز 📁</span>
-          </button>
-          <div class="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500 mt-3 font-medium">
+          <div class="flex flex-wrap items-center justify-center gap-2.5 mt-4">
+            <button id="empty-state-upload-btn" type="button" class="px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-xl shadow-purple-600/30 transition transform hover:scale-105 active:scale-95 cursor-pointer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+              <span>اختيار فيديو من الجهاز 📁</span>
+            </button>
+            <button id="empty-open-youtube-modal-btn" type="button" class="px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-xl shadow-red-600/30 transition transform hover:scale-105 active:scale-95 cursor-pointer">
+              <svg class="w-4 h-4 fill-current text-white" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              <span>استيراد من YouTube 🔗</span>
+            </button>
+          </div>
+
+          <!-- Prominent YouTube Direct URL Input Box -->
+          <div id="empty-youtube-box" class="w-full max-w-lg mt-3 pt-3 border-t border-gray-800/80 flex flex-col gap-1.5 text-right cursor-default">
+            <div class="flex items-center justify-between text-[11px] font-bold text-gray-300">
+              <span class="flex items-center gap-1.5 text-red-400">
+                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                <span>🔗 استيراد فيديو من YouTube (عادي أو Shorts)</span>
+              </span>
+              <span class="text-[9px] bg-red-950/70 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-full font-mono">يدعم أي مقطع</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="url" id="empty-youtube-url-input" placeholder="ضع رابط يوتيوب هنا (Watch / Shorts / youtu.be)..." dir="ltr" class="flex-1 bg-[#131926] border border-gray-700 focus:border-red-500 focus:ring-1 focus:ring-red-500 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 outline-none transition font-mono">
+              <button id="empty-youtube-fetch-btn" type="button" class="px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-red-600/30 transition transform hover:scale-105 active:scale-95 cursor-pointer shrink-0">
+                <span>جلب الفيديو 📥</span>
+              </button>
+            </div>
+            <div id="empty-youtube-status" class="text-[11px] text-amber-300 font-semibold min-h-[14px]"></div>
+          </div>
+
+          <div class="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500 mt-2 font-medium">
             <span>MP4, MOV, WebM, MKV</span>
             <span>•</span>
-            <span>جودة فائقة حتى 4K</span>
+            <span>YouTube Videos & Shorts</span>
             <span>•</span>
-            <span>معالجة سريعة</span>
+            <span>جودة فائقة حتى 4K</span>
           </div>
         </div>
+
 
         <!-- Video Element (Hidden until a video is loaded) -->
         <video id="main-video" class="w-full h-full object-contain cursor-pointer hidden" preload="metadata" playsinline></video>
@@ -344,9 +378,12 @@
 
     </section>
 
-    <!-- 3. MOBILE QUICK TOOLS CAROUSEL (Mobile only: Horizontal scroll bar with all 9 tools) -->
+    <!-- 3. MOBILE QUICK TOOLS CAROUSEL (Mobile only: Horizontal scroll bar with tools) -->
     <div class="order-3 lg:hidden w-full overflow-x-auto py-1 scrollbar-none">
       <div class="flex items-center gap-2 min-w-max px-1">
+        <button id="quick-youtube-btn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-600/25 border border-red-500/60 text-red-300 text-xs font-bold shrink-0 cursor-pointer hover:bg-red-600/45 transition">
+          <span>▶️ استيراد YouTube</span>
+        </button>
         <button id="quick-split-btn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-600/30 border border-purple-500/60 text-purple-300 text-xs font-bold shrink-0 cursor-pointer hover:bg-purple-600/50 transition">
           <span>✂️ تقطيع الفيديو</span>
         </button>
@@ -389,6 +426,20 @@
           </div>
           <span class="text-[10px] bg-purple-900/40 text-purple-300 border border-purple-700/40 px-2 py-0.5 rounded-full font-semibold">Pro Suite</span>
         </div>
+
+        <!-- YouTube Direct Import Tool -->
+        <button id="tool-youtube-btn" class="tool-btn group border-red-900/40 hover:border-red-500/60 bg-red-950/20 hover:bg-red-950/40">
+          <div class="flex items-center gap-2.5 sm:gap-3">
+            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-600/30 text-red-400 flex items-center justify-center group-hover:scale-105 transition shrink-0">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            </div>
+            <div class="text-right">
+              <div class="font-bold text-xs text-red-200">استيراد فيديو YouTube</div>
+              <div class="text-[10px] text-gray-400 mt-0.5">فيديوهات عادية أو Shorts بالرابط مباشرة</div>
+            </div>
+          </div>
+          <span class="text-[10px] bg-red-900/60 text-red-300 border border-red-500/40 px-1.5 py-0.5 rounded font-mono font-bold">HD</span>
+        </button>
 
         <!-- Tool 1: تقطيع الفيديو -->
         <button id="tool-split-btn" class="tool-btn active group">
@@ -1711,8 +1762,63 @@
     </div>
   </div>
 
+  <!-- 19b. YOUTUBE IMPORT MODAL -->
+  <div id="youtube-import-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-3 sm:p-4">
+    <div class="glass-panel w-full max-w-lg p-5 sm:p-6 modal-enter border border-red-500/40 glow-purple flex flex-col gap-4">
+      <div class="flex items-center justify-between pb-3 border-b border-gray-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-red-600/20 text-red-400 border border-red-500/30 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-white">🔗 استيراد فيديو من YouTube (عادي أو Shorts)</h3>
+            <p class="text-[11px] text-gray-400 mt-0.5">ضع رابط أي مقطع يوتيوب لتنزيله وفتحه مباشرة في الاستوديو</p>
+          </div>
+        </div>
+        <button id="close-youtube-modal" class="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition cursor-pointer">✕</button>
+      </div>
+
+      <!-- URL Input -->
+      <div class="flex flex-col gap-1.5 text-right">
+        <label class="text-xs font-bold text-gray-300">رابط الفيديو أو الشورتس (YouTube URL):</label>
+        <div class="relative">
+          <input type="url" id="modal-youtube-url-input" placeholder="https://www.youtube.com/watch?v=... أو youtube.com/shorts/..." dir="ltr" class="w-full bg-[#131926] border border-gray-700 focus:border-red-500 focus:ring-1 focus:ring-red-500 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-gray-500 outline-none transition font-mono">
+        </div>
+        <span class="text-[11px] text-gray-400">يدعم جميع الروابط: الفيديوهات الكاملة، مقاطع Shorts، روابط youtu.be، وروابط الهواتف.</span>
+      </div>
+
+      <!-- Quality Selection -->
+      <div class="flex items-center justify-between gap-3 bg-gray-900/60 p-3 rounded-xl border border-gray-800">
+        <span class="text-xs font-bold text-gray-300">دقة التحميل:</span>
+        <div class="flex items-center gap-3">
+          <label class="flex items-center gap-1.5 cursor-pointer text-xs text-gray-200">
+            <input type="radio" name="modal-youtube-quality" value="720p" checked class="accent-red-500">
+            <span>720p HD (سريع)</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer text-xs text-gray-200">
+            <input type="radio" name="modal-youtube-quality" value="1080p" class="accent-red-500">
+            <span>1080p Full HD</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Status / Error Text -->
+      <div id="youtube-modal-status" class="text-xs text-center text-amber-300 font-semibold min-h-[16px]"></div>
+
+      <!-- Modal Actions -->
+      <div class="flex items-center gap-2 pt-2">
+        <button id="modal-youtube-fetch-btn" type="button" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:opacity-95 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-red-600/30 flex items-center justify-center gap-2 transition transform active:scale-98 cursor-pointer">
+          <span>جلب الفيديو 📥</span>
+        </button>
+        <button id="cancel-youtube-modal-btn" type="button" class="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold text-xs transition cursor-pointer">
+          إلغاء
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- 20. BACKGROUND TASKS MANAGER MODAL ("مربع المهام") -->
+
   <div id="tasks-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-3 sm:p-4">
     <div class="glass-panel w-full max-w-2xl p-4 sm:p-6 modal-enter border border-purple-500/50 glow-purple flex flex-col gap-4 max-h-[92vh] overflow-hidden">
       

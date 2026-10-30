@@ -306,8 +306,196 @@ document.addEventListener("DOMContentLoaded", () => {
     fileInput?.click();
   });
 
+  // YouTube Import Modal Handlers
+  const openYouTubeModal = () => {
+    const modal = document.getElementById("youtube-import-modal");
+    if (modal) {
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+      const input = document.getElementById("modal-youtube-url-input");
+      if (input) {
+        input.focus();
+      }
+      const statusEl = document.getElementById("youtube-modal-status");
+      if (statusEl) statusEl.innerText = "";
+    }
+  };
+
+  const closeYouTubeModal = () => {
+    const modal = document.getElementById("youtube-import-modal");
+    if (modal) {
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+  };
+
+  document.getElementById("nav-youtube-btn")?.addEventListener("click", openYouTubeModal);
+  document.getElementById("mobile-nav-youtube-btn")?.addEventListener("click", openYouTubeModal);
+  document.getElementById("tool-youtube-btn")?.addEventListener("click", openYouTubeModal);
+  document.getElementById("quick-youtube-btn")?.addEventListener("click", openYouTubeModal);
+  document.getElementById("empty-open-youtube-modal-btn")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openYouTubeModal();
+  });
+  document.getElementById("close-youtube-modal")?.addEventListener("click", closeYouTubeModal);
+  document.getElementById("cancel-youtube-modal-btn")?.addEventListener("click", closeYouTubeModal);
+
+  // Helper to load imported YouTube video into studio player & timeline
+  const activateImportedVideo = (data, customTitle = null) => {
+    window.currentVideoId = data.video_id;
+
+    if (videoEl && data.preview_url) {
+      player.hideEmptyState();
+      videoEl.src = data.preview_url;
+      videoEl.load();
+      videoEl.play().catch(() => {});
+    }
+
+    if (data.info && data.info.duration) {
+      timeline.duration = data.info.duration;
+      timeline.setTime(0);
+      timeline.renderRuler();
+      timeline.drawAudioWaveform();
+      timeline.renderFilmstrip();
+    }
+
+    const resText = data.info?.resolution || (data.info?.width ? `${data.info.width}x${data.info.height}` : '720p HD');
+    const durText = data.info?.formatted_duration || '';
+    const title = customTitle || data.title || data.filename || "YouTube Video";
+
+    timeline.showToast(`🎉 تم جلب واستيراد "${title}" بنجاح!`);
+
+    saveProject({
+      id: data.video_id,
+      name: title,
+      duration: durText || "01:00",
+      resolution: resText,
+      size: data.info?.size_mb ? `${data.info.size_mb} MB` : 'YouTube',
+      date: new Date().toLocaleDateString("ar-EG"),
+    });
+  };
+
+  const processYouTubeImport = async (url, quality = "720p", statusEl = null, btn = null) => {
+    const cleanUrl = (url || "").trim();
+    if (!cleanUrl) {
+      const err = "⚠️ يرجى إدخال رابط فيديو YouTube أولاً";
+      if (statusEl) statusEl.innerText = err;
+      timeline.showToast(err);
+      return;
+    }
+
+    const ytRegex = /^(https?:\/\/)?(www\.|m\.)?(youtube\.com\/(watch\?.*v=|shorts\/|embed\/|v\/|live\/)|youtu\.be\/)/i;
+    if (!ytRegex.test(cleanUrl) && !cleanUrl.includes("youtube.com") && !cleanUrl.includes("youtu.be")) {
+      const err = "⚠️ يرجى التأكد من كتابة رابط يوتيوب صالح (عادي أو Shorts أو youtu.be)";
+      if (statusEl) statusEl.innerText = err;
+      timeline.showToast(err);
+      return;
+    }
+
+    if (statusEl) {
+      statusEl.innerText = "⏳ جاري الاتصال بخوادم YouTube وتنزيل المقطع...";
+    }
+
+    const shortUrlDisplay = cleanUrl.replace(/https?:\/\/(www\.)?/, "").substring(0, 26) + "...";
+
+    if (window.tasksManager) {
+      window.tasksManager.runBackgroundTask({
+        type: "youtube_import",
+        title: `جلب فيديو YouTube (${shortUrlDisplay})`,
+        icon: "▶️",
+        details: "جاري تنزيل الفيديو من سيرفرات YouTube ومعالجة الأبعاد والصوت...",
+        dismissModalId: "youtube-import-modal",
+        apiCall: async () => {
+          const formData = new FormData();
+          formData.append("url", cleanUrl);
+          formData.append("quality", quality);
+
+          const resp = await fetch("/api/video/import-youtube", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await resp.json();
+          if (!resp.ok || !data.success) {
+            throw new Error(data.detail || data.error || "تعذر تنزيل فيديو YouTube");
+          }
+          return data;
+        },
+        onSuccess: (data) => {
+          activateImportedVideo(data, data.title);
+          if (statusEl) statusEl.innerText = "";
+        },
+        onError: (err) => {
+          if (statusEl) statusEl.innerText = `⚠️ ${err.message}`;
+          timeline.showToast(`⚠️ ${err.message}`);
+        }
+      });
+    } else {
+      // Direct call fallback
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.innerText = "⏳ جاري التحميل...";
+        }
+        const formData = new FormData();
+        formData.append("url", cleanUrl);
+        formData.append("quality", quality);
+
+        const resp = await fetch("/api/video/import-youtube", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await resp.json();
+        if (!resp.ok || !data.success) {
+          throw new Error(data.detail || data.error || "تعذر تنزيل فيديو YouTube");
+        }
+        activateImportedVideo(data, data.title);
+        closeYouTubeModal();
+      } catch (err) {
+        if (statusEl) statusEl.innerText = `⚠️ ${err.message}`;
+        timeline.showToast(`⚠️ ${err.message}`);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = "جلب الفيديو 📥";
+        }
+      }
+    }
+  };
+
+  // Wire Modal Fetch Button
+  document.getElementById("modal-youtube-fetch-btn")?.addEventListener("click", () => {
+    const input = document.getElementById("modal-youtube-url-input");
+    const quality = document.querySelector('input[name="modal-youtube-quality"]:checked')?.value || "720p";
+    const statusEl = document.getElementById("youtube-modal-status");
+    const btn = document.getElementById("modal-youtube-fetch-btn");
+    processYouTubeImport(input?.value, quality, statusEl, btn);
+  });
+  document.getElementById("modal-youtube-url-input")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      document.getElementById("modal-youtube-fetch-btn")?.click();
+    }
+  });
+
+  // Wire Empty State Direct Input
+  document.getElementById("empty-youtube-fetch-btn")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const input = document.getElementById("empty-youtube-url-input");
+    const statusEl = document.getElementById("empty-youtube-status");
+    const btn = document.getElementById("empty-youtube-fetch-btn");
+    processYouTubeImport(input?.value, "720p", statusEl, btn);
+  });
+  document.getElementById("empty-youtube-url-input")?.addEventListener("keydown", (e) => {
+    e.stopPropagation();
+    if (e.key === "Enter") {
+      e.preventDefault();
+      document.getElementById("empty-youtube-fetch-btn")?.click();
+    }
+  });
+
   // Pricing Modal (Desktop & Mobile)
   const openPricingHandler = () => {
+
     const modal = document.getElementById("pricing-modal");
     if (modal) {
       modal.classList.remove("hidden");

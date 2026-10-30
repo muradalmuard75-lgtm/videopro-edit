@@ -502,11 +502,29 @@ class SubtitlesManager {
    * Extract Cues Only (without burning yet) for inspection or editing
    */
   async extractCuesOnly() {
-    if (!window.currentVideoId) return;
+    if (!window.currentVideoId) {
+      if (window.timelineInstance) {
+        window.timelineInstance.showToast("⚠️ يرجى اختيار أو رفع فيديو أولاً");
+      }
+      return;
+    }
     const vidId = window.currentVideoId;
     const statusText = document.getElementById("subtitles-status-text");
+    const extractBtn = document.getElementById("extract-cues-only-btn");
+    const originalBtnHtml = extractBtn ? extractBtn.innerHTML : "";
 
-    if (statusText) statusText.innerText = "⏳ جاري سحب مقطع الصوت واستخراج نصوص الكلام العربي بدقة عالية...";
+    if (extractBtn) {
+      extractBtn.disabled = true;
+      extractBtn.classList.add("opacity-60", "cursor-not-allowed");
+      extractBtn.innerHTML = `⏳ جاري الاستخراج...`;
+    }
+
+    if (statusText) {
+      statusText.innerText = "⏳ جاري سحب مقطع الصوت وتفريغ الكلام العربي بسرعة فائقة...";
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s safety client timeout
 
     try {
       const formData = new FormData();
@@ -518,9 +536,12 @@ class SubtitlesManager {
       const resp = await fetch("/api/video/subtitles", {
         method: "POST",
         body: formData,
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
+
       const data = await resp.json();
-      if (!resp.ok || !data.success) {
+      if (!resp.ok || !data.success || !data.cues || data.cues.length === 0) {
         throw new Error(data.error || "لم يتم رصد كلام واضح في مقطع الصوت");
       }
 
@@ -528,15 +549,29 @@ class SubtitlesManager {
       this.renderCuesList();
       this.updateTimelineSubtitleBlocks();
       if (statusText) {
-        statusText.innerText = `✅ تم استخراج ${this.cues.length} سطر كلام بنمط الريلز بدقة عالية! اضغط "حرق النصوص المعدلة" أو الزر التلقائي لحرقها.`;
+        statusText.innerText = `✅ تم استخراج ${this.cues.length} سطر كلام بنمط الريلز بدقة عالية وخلال ثوانٍ! اضغط "حرق النصوص المعدلة" لحرقها.`;
       }
       if (window.timelineInstance) {
         window.timelineInstance.showToast(`✅ تم استخراج ${this.cues.length} سطر كلام بنمط الريلز بدقة عالية!`);
       }
     } catch (err) {
-      if (statusText) statusText.innerText = `⚠️ ${err.message}`;
+      clearTimeout(timeoutId);
+      const errMsg = err.name === "AbortError"
+        ? "استغرقت معالجة الصوت وقتاً أطول من المتوقع، يرجى المحاولة مرة أخرى أو فحص المقطع"
+        : (err.message || "فشل استخراج النصوص");
+      if (statusText) statusText.innerText = `⚠️ ${errMsg}`;
+      if (window.timelineInstance) {
+        window.timelineInstance.showToast(`⚠️ ${errMsg}`);
+      }
+    } finally {
+      if (extractBtn) {
+        extractBtn.disabled = false;
+        extractBtn.classList.remove("opacity-60", "cursor-not-allowed");
+        extractBtn.innerHTML = originalBtnHtml;
+      }
     }
   }
+
 
   addManualCue() {
     const video = document.getElementById("main-video");

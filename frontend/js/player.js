@@ -42,9 +42,13 @@ class VideoPlayer {
       e.stopPropagation();
       document.getElementById("video-file-input")?.click();
     });
-    document.getElementById("empty-player-state")?.addEventListener("click", () => {
+    document.getElementById("empty-player-state")?.addEventListener("click", (e) => {
+      if (e.target.closest("#empty-youtube-box") || e.target.closest("button") || e.target.closest("input")) {
+        return;
+      }
       document.getElementById("video-file-input")?.click();
     });
+
 
     if (!window.currentVideoId) {
       this.showEmptyState();

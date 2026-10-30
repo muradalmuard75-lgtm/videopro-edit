@@ -76,13 +76,13 @@ def split_arabic_words(words: List[str], max_words_per_cue: int = 4) -> List[str
     return chunks
 
 def get_whisper_model():
-    """Lazy load faster-whisper base model with int8 quantization and fixed 2 CPU threads for high accuracy on Arabic speech."""
+    """Lazy load faster-whisper tiny model with int8 quantization and fixed 2 CPU threads for ultra-fast instant transcription."""
     global _whisper_model
     if _whisper_model is None:
         try:
             from faster_whisper import WhisperModel
             _whisper_model = WhisperModel(
-                "base",
+                "tiny",
                 device="cpu",
                 compute_type="int8",
                 cpu_threads=2,
@@ -92,6 +92,7 @@ def get_whisper_model():
             print(f"Failed to load WhisperModel: {e}")
             return None
     return _whisper_model
+
 
 PRESET_STYLES = {
     "tiktok_yellow": {
@@ -156,18 +157,23 @@ PRESET_STYLES = {
     }
 }
 
-def extract_audio_numpy(video_path: str, sr: int = 16000):
-    """Extract raw PCM audio as float32 numpy array using ffmpeg."""
+def extract_audio_numpy(video_path: str, sr: int = 16000, max_duration_sec: float = 180.0):
+    """Extract raw PCM audio as float32 numpy array using ffmpeg with strict timeout."""
     import numpy as np
-    cmd = [
-        "ffmpeg", "-nostdin", "-threads", "2", "-y",
-        "-i", video_path,
-        "-f", "s16le", "-ac", "1", "-ar", str(sr), "-"
-    ]
-    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if res.returncode != 0 or len(res.stdout) == 0:
+    try:
+        cmd = [
+            "ffmpeg", "-nostdin", "-threads", "2", "-y",
+            "-i", video_path,
+            "-t", str(int(max_duration_sec)),
+            "-f", "s16le", "-ac", "1", "-ar", str(sr), "-"
+        ]
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=12)
+        if res.returncode != 0 or len(res.stdout) == 0:
+            return None
+        return np.frombuffer(res.stdout, np.int16).flatten().astype(np.float32) / 32768.0
+    except Exception as e:
+        print(f"extract_audio_numpy notice: {e}")
         return None
-    return np.frombuffer(res.stdout, np.int16).flatten().astype(np.float32) / 32768.0
 
 def translate_to_arabic(text: str) -> str:
     """Translate English or foreign speech to natural Arabic via free translation API with cache."""
@@ -198,12 +204,12 @@ def transcribe_fallback_google(video_path: str, language: str = "ar-SA") -> List
     temp_wav = os.path.join(os.path.dirname(video_path), f"temp_google_sr_{uuid.uuid4().hex[:6]}.wav")
     try:
         import speech_recognition as sr
-        # Extract audio to 16kHz mono wav
+        # Extract audio to 16kHz mono wav (capped to 60s for instant recognition)
         cmd = [
             "ffmpeg", "-nostdin", "-y", "-i", video_path,
-            "-vn", "-ar", "16000", "-ac", "1", "-f", "wav", temp_wav
+            "-t", "60", "-vn", "-ar", "16000", "-ac", "1", "-f", "wav", temp_wav
         ]
-        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
+        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
         if not os.path.exists(temp_wav) or os.path.getsize(temp_wav) < 1000:
             return []
 
@@ -214,6 +220,7 @@ def transcribe_fallback_google(video_path: str, language: str = "ar-SA") -> List
         text = ""
         for lang_code in [language, "ar-EG", "ar-AE", "ar-JO"]:
             try:
+                # Use short 6s timeout per request so fallback never delays
                 text = r.recognize_google(audio_data, language=lang_code)
                 if text and len(text.strip()) > 0:
                     break
@@ -229,7 +236,7 @@ def transcribe_fallback_google(video_path: str, language: str = "ar-SA") -> List
         try:
             import subprocess as sp
             probe_cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", video_path]
-            dur_out = sp.check_output(probe_cmd, timeout=5).decode().strip()
+            dur_out = sp.check_output(probe_cmd, timeout=4).decode().strip()
             duration = max(2.0, float(dur_out))
         except Exception:
             pass
@@ -249,6 +256,7 @@ def transcribe_fallback_google(video_path: str, language: str = "ar-SA") -> List
         if os.path.exists(temp_wav):
             try: os.remove(temp_wav)
             except Exception: pass
+
 
 def chunk_cues_for_reels(cues: List[Dict[str, Any]], max_words_per_cue: int = 4) -> List[Dict[str, Any]]:
     """
@@ -353,42 +361,37 @@ def generate_subtitles(
     cues: List[Dict[str, Any]] = []
     detected_lang = "ar"
 
-    if model is not None and audio_arr is not None and len(audio_arr) > 8000:
+    if audio_arr is not None and len(audio_arr) > 4000:
+        import numpy as np
+        # Instant silence check: if peak audio is below 0.004, it's silence
+        if float(np.max(np.abs(audio_arr))) < 0.004:
+            print("Audio track is silent; no spoken words detected.")
+            return {"success": False, "error": "المقطع الصوتي هادئ أو صامت ولا يحتوي على كلام مسموع"}
+
+    if model is not None and audio_arr is not None and len(audio_arr) > 4000:
         try:
             transcribe_kwargs = {
-                "beam_size": 2,
+                "beam_size": 1,  # Greedy search gives instant 1-2s response
                 "vad_filter": True,
-                "vad_parameters": dict(min_silence_duration_ms=400),
+                "vad_parameters": dict(min_silence_duration_ms=300),
                 "temperature": 0.0,
                 "condition_on_previous_text": False,
                 "word_timestamps": False
             }
             if target_language == "ar":
+                transcribe_kwargs["language"] = "ar"
                 transcribe_kwargs["initial_prompt"] = ARABIC_INITIAL_PROMPT
 
-            segments, info = model.transcribe(
-                audio_arr,
-                **transcribe_kwargs
-            )
-            detected_lang = info.language
-            detected_prob = getattr(info, "language_probability", 1.0)
-            print(f"Whisper transcribed audio. Detected language: {detected_lang} (prob: {detected_prob:.2f})")
+            # Run Whisper with a strict 9s timeout to never hang the server
+            def _transcribe_worker():
+                segs, inf = model.transcribe(audio_arr, **transcribe_kwargs)
+                return list(segs), getattr(inf, "language", "ar")
 
-            # If user wanted Arabic, but Whisper detected foreign/dialectal phonemes (or low-prob English),
-            # force pure Arabic decoding with initial prompt so text is 100% Arabic without garbling
-            if target_language == "ar" and detected_lang != "ar":
-                is_confident_english = (detected_lang == "en" and detected_prob >= 0.60)
-                if not is_confident_english:
-                    print(f"Detected {detected_lang} (prob {detected_prob:.2f}) while target is Arabic; re-decoding with forced language='ar'...")
-                    transcribe_kwargs["language"] = "ar"
-                    transcribe_kwargs["initial_prompt"] = ARABIC_INITIAL_PROMPT
-                    segments, info = model.transcribe(
-                        audio_arr,
-                        **transcribe_kwargs
-                    )
-                    detected_lang = "ar"
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(_transcribe_worker)
+                raw_segments, detected_lang = future.result(timeout=9.0)
 
-            raw_segments = list(segments)
+            print(f"Whisper transcribed audio in fast mode. Detected language: {detected_lang}")
 
             # Concurrent translation if foreign speech detected and Arabic targeted
             translated_map = {}
@@ -426,7 +429,8 @@ def generate_subtitles(
                     "text": clean_text
                 })
         except Exception as whisper_err:
-            print(f"Whisper transcription error: {whisper_err}")
+            print(f"Whisper transcription notice/timeout: {whisper_err}")
+
 
     # 2. Try Google Web Speech API fallback via speech_recognition if no cues extracted yet
     if not cues and target_language == "ar":

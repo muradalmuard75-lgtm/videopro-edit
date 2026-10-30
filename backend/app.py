@@ -2,6 +2,7 @@ import os
 import time
 import uuid
 import shutil
+import asyncio
 import subprocess
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query
@@ -22,8 +23,11 @@ from video_engine import (
     merge_video_clips,
     add_text_to_video,
     burn_subtitles_into_video,
+    is_valid_youtube_url,
+    download_youtube_video,
 )
 from ai_subtitles import generate_subtitles
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
@@ -151,7 +155,47 @@ async def upload_video(file: UploadFile = File(...)):
         "info": info
     }
 
+@app.post("/api/video/import-youtube")
+async def import_youtube_video(
+    url: str = Form(...),
+    quality: str = Form("720p")
+):
+    """
+    Download and import any YouTube video (Standard watch videos, Shorts, mobile links).
+    Capped to 720p or 1080p, saved into uploads/, and loaded into studio player & timeline.
+    """
+    clean_url = (url or "").strip()
+    if not clean_url:
+        raise HTTPException(status_code=400, detail="يرجى إدخال رابط فيديو YouTube")
+
+    if not is_valid_youtube_url(clean_url):
+        raise HTTPException(
+            status_code=400,
+            detail="رابط YouTube غير صالح. يرجى توفير رابط صحيح (مثل: youtube.com/watch أو youtube.com/shorts أو youtu.be)"
+        )
+
+    try:
+        # Run yt-dlp in threadpool to keep async event loop responsive
+        res = await asyncio.to_thread(
+            download_youtube_video,
+            url=clean_url,
+            output_dir=UPLOADS_DIR,
+            quality=quality
+        )
+        return res
+    except Exception as e:
+        err_msg = str(e)
+        print(f"YouTube import error: {err_msg}")
+        if "Private video" in err_msg or "Sign in" in err_msg:
+            detail = "هذا الفيديو خاص أو مقيد بحساب، يرجى استخدام فيديو متاح للعامة."
+        elif "Video unavailable" in err_msg or "not found" in err_msg.lower():
+            detail = "فيديو YouTube غير متاح أو تم حذفه."
+        else:
+            detail = f"تعذر تنزيل فيديو YouTube: {err_msg[:120]}"
+        raise HTTPException(status_code=400, detail=detail)
+
 @app.get("/api/video/info")
+
 async def video_info(video_id: str = "sample"):
     """Get video technical specifications."""
     file_path = resolve_video_path(video_id)
