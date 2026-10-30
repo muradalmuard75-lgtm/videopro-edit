@@ -9,12 +9,18 @@ from typing import List, Dict, Any, Optional
 _whisper_model = None
 
 def get_whisper_model():
-    """Lazy load faster-whisper tiny model with int8 quantization for minimal RAM (<250MB)."""
+    """Lazy load faster-whisper tiny model with int8 quantization and fixed 2 CPU threads for maximum cloud speed."""
     global _whisper_model
     if _whisper_model is None:
         try:
             from faster_whisper import WhisperModel
-            _whisper_model = WhisperModel("tiny", device="cpu", compute_type="int8")
+            _whisper_model = WhisperModel(
+                "tiny",
+                device="cpu",
+                compute_type="int8",
+                cpu_threads=2,
+                num_workers=1
+            )
         except Exception as e:
             print(f"Failed to load WhisperModel: {e}")
             return None
@@ -24,7 +30,7 @@ def extract_audio_numpy(video_path: str, sr: int = 16000):
     """Extract raw PCM audio as float32 numpy array using ffmpeg."""
     import numpy as np
     cmd = [
-        "ffmpeg", "-nostdin", "-threads", "0", "-y",
+        "ffmpeg", "-nostdin", "-threads", "2", "-y",
         "-i", video_path,
         "-f", "s16le", "-ac", "1", "-ar", str(sr), "-"
     ]
@@ -75,7 +81,13 @@ def generate_subtitles(
 
     if model is not None and audio_arr is not None and len(audio_arr) > 8000:
         try:
-            segments, info = model.transcribe(audio_arr, beam_size=1, word_timestamps=False)
+            segments, info = model.transcribe(
+                audio_arr,
+                beam_size=1,
+                vad_filter=True,
+                condition_on_previous_text=False,
+                word_timestamps=False
+            )
             detected_lang = info.language
             print(f"Whisper transcribed audio. Detected language: {detected_lang}")
 
@@ -135,7 +147,7 @@ def generate_subtitles(
                 }
 
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={api_key}"
-                resp = requests.post(url, json=payload, timeout=12)
+                resp = requests.post(url, json=payload, timeout=3)
                 if resp.status_code == 200:
                     raw_json = resp.json()
                     cand = raw_json["candidates"][0]["content"]["parts"][0]["text"]

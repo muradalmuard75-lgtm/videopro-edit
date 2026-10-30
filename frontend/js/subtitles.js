@@ -195,15 +195,28 @@ class SubtitlesManager {
           formData.append("text_color", textColor);
           formData.append("position", position);
 
-          const resp = await fetch("/api/video/auto-caption-and-burn", {
-            method: "POST",
-            body: formData,
-          });
-          const data = await resp.json();
-          if (!resp.ok || data.error) {
-            throw new Error(data.detail || data.error || "فشل استخراج الصوت وكتابة الترجمة");
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s max timeout
+
+          try {
+            const resp = await fetch("/api/video/auto-caption-and-burn", {
+              method: "POST",
+              body: formData,
+              signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+            const data = await resp.json();
+            if (!resp.ok || data.error) {
+              throw new Error(data.detail || data.error || "فشل استخراج الصوت وكتابة الترجمة");
+            }
+            return data;
+          } catch (err) {
+            clearTimeout(timeoutId);
+            if (err.name === "AbortError") {
+              throw new Error("استغرقت المعالجة وقتاً أطول من المتوقع، يرجى المحاولة مرة أخرى");
+            }
+            throw err;
           }
-          return data;
         },
         onSuccess: (data) => {
           // Load new subtitled video into player

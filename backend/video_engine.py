@@ -716,15 +716,17 @@ def burn_subtitles_into_video(
     with open(temp_ass, "w", encoding="utf-8") as f:
         f.write(ass_content)
 
-    # Use ass filter in ffmpeg
+    # Use ass filter in ffmpeg with ultrafast preset and fixed thread count for maximum speed
     escaped_ass = temp_ass.replace("\\", "/").replace(":", "\\:")
     cmd = [
         "ffmpeg", "-y",
+        "-threads", "2",
         "-i", video_path,
         "-vf", f"ass='{escaped_ass}'",
         "-c:v", "libx264",
-        "-preset", "veryfast",
-        "-crf", "20",
+        "-preset", "ultrafast",
+        "-tune", "fastdecode",
+        "-crf", "23",
         "-c:a", "copy",
         "-movflags", "+faststart",
         output_path

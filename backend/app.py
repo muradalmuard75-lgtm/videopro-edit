@@ -269,7 +269,7 @@ async def auto_subtitles(
     return result
 
 @app.post("/api/video/burn-subtitles")
-async def api_burn_subtitles(
+def api_burn_subtitles(
     video_id: str = Form("sample"),
     cues_json: str = Form("[]"),
     font_name: str = Form("Amiri"),
@@ -314,7 +314,7 @@ async def api_burn_subtitles(
     return result
 
 @app.post("/api/video/auto-caption-and-burn")
-async def api_auto_caption_and_burn(
+def api_auto_caption_and_burn(
     video_id: str = Form("sample"),
     target_language: str = Form("ar"),
     font_name: str = Form("Amiri"),

@@ -263,6 +263,9 @@ class TasksManager {
     if (type === "text") {
       return `تم حرق النص والشعارات بنجاح (${data.size_mb || "0"} MB)`;
     }
+    if (type === "autocaption") {
+      return `تم سحب الصوت وحرق ${data.cues ? data.cues.length : 0} سطر ترجمة داخل الفيديو (${data.size_mb || "0"} MB)`;
+    }
     return "اكتمل بنجاح";
   }
 
