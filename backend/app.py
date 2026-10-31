@@ -172,7 +172,7 @@ async def upload_video(file: UploadFile = File(...)):
 
 @app.post("/api/video/import-youtube")
 async def import_youtube_video(
-    url: str = Form(...),
+    url: str = Form(""),
     quality: str = Form("720p")
 ):
     """
