@@ -1,5 +1,6 @@
 /**
- * VideoPro Edit - AI Highlights & Best Moments Extractor
+ * VideoPro Edit v2.0 - AI Highlights & Best Moments Extractor
+ * Extracts top highlight clips and lets user preview each highlight directly in the player.
  */
 class HighlightsManager {
   constructor() {
@@ -22,9 +23,9 @@ class HighlightsManager {
   openModal() {
     if (!window.currentVideoId) {
       if (window.timelineInstance) {
-        window.timelineInstance.showToast("⚠️ يرجى رفع فيديو أولاً لاستخراج أفضل اللقطات");
+        window.timelineInstance.showToast("⚠️ يرجى رفع أو جلب فيديو أولاً لاستخراج أفضل اللقطات");
       }
-      document.getElementById("video-file-input")?.click();
+      document.getElementById("youtube-url-input")?.focus();
       return;
     }
     if (!this.modal) return;
@@ -39,23 +40,22 @@ class HighlightsManager {
   }
 
   async extractHighlights() {
-    if (!window.currentVideoId) {
-      if (window.timelineInstance) window.timelineInstance.showToast("⚠️ يرجى رفع فيديو أولاً للبدء");
-      this.closeModal();
-      document.getElementById("video-file-input")?.click();
-      return;
-    }
+    if (!window.currentVideoId) return;
 
     const count = document.getElementById("highlights-count-select")?.value || "3";
     const duration = document.getElementById("highlights-dur-select")?.value || "20";
     const vidId = window.currentVideoId;
 
+    const statusText = document.getElementById("highlights-status-text");
+    const container = document.getElementById("highlights-cards-container");
+    if (statusText) statusText.innerText = "⏳ جاري تحليل المشاهد واستخراج أقوى اللقطات...";
+
     if (window.tasksManager) {
-      window.tasksManager.runBackgroundTask({
+      await window.tasksManager.runBackgroundTask({
         type: "highlights",
         title: `استخراج أفضل ${count} لقطات بالذكاء الاصطناعي (AI)`,
         icon: "🎯",
-        dismissModalId: "highlights-modal",
+        dismissModalId: null,
         apiCall: async () => {
           const formData = new FormData();
           formData.append("video_id", vidId);
@@ -70,66 +70,40 @@ class HighlightsManager {
           if (!resp.ok || data.error) throw new Error(data.error || "فشل استخراج اللقطات");
           return data;
         },
+        onSuccess: (data) => {
+          if (statusText) {
+            statusText.innerText = `✅ تم استخراج ${data.count} من أفضل اللقطات جاهزة للمعاينة والتنزيل!`;
+          }
+          if (container && data.highlights) {
+            container.innerHTML = "";
+            data.highlights.forEach((h) => {
+              const card = document.createElement("div");
+              card.className =
+                "p-3 rounded-xl bg-gray-900/90 border border-amber-500/40 flex items-center justify-between text-xs";
+              card.innerHTML = `
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center font-bold text-black shadow">
+                    #${h.index}
+                  </div>
+                  <div>
+                    <h4 class="font-bold text-gray-100">${h.title}</h4>
+                    <p class="text-[11px] text-amber-300 font-mono">المدة: ${h.duration} ثانية</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <button type="button" onclick="window.previewChunk('${h.url || ""}', '${h.title}', ${h.start || 0}, ${h.end || 20})" class="px-2.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold text-white transition cursor-pointer">
+                    ▶ معاينة
+                  </button>
+                  <a href="${h.url || "#"}" download="${h.filename}" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-bold text-white transition">
+                    ⬇ تنزيل
+                  </a>
+                </div>
+              `;
+              container.appendChild(card);
+            });
+          }
+        },
       });
-      return;
-    }
-
-    if (this.isProcessing) return;
-    this.isProcessing = true;
-
-    const statusText = document.getElementById("highlights-status-text");
-    const container = document.getElementById("highlights-cards-container");
-
-    if (statusText) statusText.innerText = "جاري تحليل المشاهد الأكثر إثارة وتغيراً عبر الذكاء الاصطناعي...";
-    if (container) container.innerHTML = "";
-
-    try {
-      const formData = new FormData();
-      formData.append("video_id", vidId);
-      formData.append("count", count);
-      formData.append("duration", duration);
-
-      const resp = await fetch("/api/video/highlights", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await resp.json();
-      if (!resp.ok || data.error) throw new Error(data.error || "فشل استخراج اللقطات");
-
-      if (statusText) statusText.innerText = `تم استخراج ${data.count} من أفضل اللقطات جاهزة للمشاركة!`;
-
-      if (container && data.highlights) {
-        data.highlights.forEach((h) => {
-          const card = document.createElement("div");
-          card.className = "p-4 rounded-xl bg-gray-900/90 border border-purple-500/30 flex items-center justify-between";
-          card.innerHTML = `
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg">
-                #${h.index}
-              </div>
-              <div>
-                <h4 class="font-bold text-gray-100 text-sm">${h.title}</h4>
-                <p class="text-xs text-gray-400 font-mono mt-0.5">المدة: ${h.duration} ثانية</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <button onclick="window.previewChunk('${h.url}')" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-200 transition">
-                معاينة
-              </button>
-              <a href="${h.url}" download="${h.filename}" class="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white flex items-center gap-1.5 shadow transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                تنزيل المقطع
-              </a>
-            </div>
-          `;
-          container.appendChild(card);
-        });
-      }
-    } catch (err) {
-      if (statusText) statusText.innerText = `خطأ: ${err.message}`;
-    } finally {
-      this.isProcessing = false;
     }
   }
 }

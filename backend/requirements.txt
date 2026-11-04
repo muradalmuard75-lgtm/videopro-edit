@@ -6,4 +6,5 @@ pydantic>=2.9.2
 requests>=2.32.3
 numpy>=1.26.0
 faster-whisper>=1.1.0
-yt-dlp>=2024.10.22
+yt-dlp>=2025.1.15
+SpeechRecognition>=3.10.4

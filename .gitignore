@@ -8,13 +8,23 @@ env/
 venv/
 .venv/
 
-# VideoPro Temporary Working files
-backend/uploads/*.mp4
-backend/uploads/*.wav
-backend/uploads/*.mp3
+# Temporary video, audio, and subtitle files
+backend/uploads/*
 !backend/uploads/sample.mp4
 backend/exports/*
 !backend/exports/.gitkeep
+
+# Exclude all archives and raw media
+*.zip
+*.tar.gz
+*.vtt
+*.part
+*.ytdl
+*.log
+
+# Sensitive YouTube credentials & local job schedules
+backend/youtube_credentials.json
+backend/youtube_scheduled_jobs.json
 
 # OS & IDE
 .DS_Store
