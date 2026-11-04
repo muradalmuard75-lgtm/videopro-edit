@@ -54,6 +54,7 @@ def get_video_info(file_path: str) -> Dict[str, Any]:
             fps = 25.0
 
         has_audio = a_stream is not None
+        a_codec = a_stream.get("codec_name", "none") if a_stream else "none"
 
         return {
             "duration": duration,
@@ -68,6 +69,7 @@ def get_video_info(file_path: str) -> Dict[str, Any]:
             "fps": fps,
             "codec": v_codec,
             "has_audio": has_audio,
+            "a_codec": a_codec,
         }
     except Exception as e:
         return {"error": str(e)}
@@ -530,6 +532,69 @@ def fetch_youtube_video(
         }
 
     info = get_video_info(saved_path)
+
+    # Audio guarantee: if the downloaded video is missing audio or audio codec is not AAC, fix it!
+    if not info.get("has_audio"):
+        print(f"Notice: {saved_path} has no audio stream! Downloading best audio and merging...")
+        tmp_audio = os.path.join(uploads_dir, f"tmp_audio_{base_stem}.m4a")
+        audio_ok = False
+        try:
+            import yt_dlp
+            a_opts = {
+                "format": "bestaudio[ext=m4a]/bestaudio/best",
+                "outtmpl": tmp_audio,
+                "quiet": True,
+                "no_warnings": True,
+                "socket_timeout": 20,
+                "nocheckcertificate": True,
+            }
+            with yt_dlp.YoutubeDL(a_opts) as a_ydl:
+                a_ydl.download([canonical])
+            if os.path.exists(tmp_audio) and os.path.getsize(tmp_audio) > 5000:
+                audio_ok = True
+        except Exception as e:
+            print(f"Audio download attempt failed: {e}")
+
+        if audio_ok:
+            fixed_tmp = f"{saved_path}.merged.mp4"
+            merge_cmd = [
+                "ffmpeg", "-y",
+                "-i", saved_path,
+                "-i", tmp_audio,
+                "-c:v", "copy",
+                "-c:a", "aac",
+                "-b:a", "192k",
+                "-movflags", "+faststart",
+                fixed_tmp,
+            ]
+            r = run_command(merge_cmd)
+            if r.returncode == 0 and os.path.exists(fixed_tmp) and os.path.getsize(fixed_tmp) > 10000:
+                shutil.move(fixed_tmp, saved_path)
+            try:
+                if os.path.exists(tmp_audio):
+                    os.remove(tmp_audio)
+                if os.path.exists(fixed_tmp):
+                    os.remove(fixed_tmp)
+            except Exception:
+                pass
+            info = get_video_info(saved_path)
+    elif info.get("has_audio") and info.get("a_codec") not in ("aac", "mp3"):
+        # Transcode non-standard audio (like Opus or Vorbis inside MP4) to AAC stereo for universal browser playback
+        fixed_tmp = f"{saved_path}.aac.mp4"
+        remux_cmd = [
+            "ffmpeg", "-y",
+            "-i", saved_path,
+            "-c:v", "copy",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-movflags", "+faststart",
+            fixed_tmp,
+        ]
+        r = run_command(remux_cmd)
+        if r.returncode == 0 and os.path.exists(fixed_tmp) and os.path.getsize(fixed_tmp) > 10000:
+            shutil.move(fixed_tmp, saved_path)
+            info = get_video_info(saved_path)
+
     if info.get("height", 0) > info.get("width", 0):
         is_short = True
 

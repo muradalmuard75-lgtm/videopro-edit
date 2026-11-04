@@ -222,7 +222,7 @@
 
         <!-- Guaranteed Moving Video Stream Layer (z-1) + H.264 Hardware Video Element (z-2) -->
         <img id="moving-video-stream-img" alt="مشغل الفيديو المتحرك" class="absolute inset-0 w-full h-full object-contain cursor-pointer hidden select-none z-[1]" />
-        <video id="main-video" class="absolute inset-0 w-full h-full object-contain cursor-pointer hidden z-[2]" preload="auto" muted playsinline webkit-playsinline loop></video>
+        <video id="main-video" class="absolute inset-0 w-full h-full object-contain cursor-pointer hidden z-[2]" preload="auto" playsinline webkit-playsinline loop></video>
 
         <!-- Top Controls Bar inside Player (Non-overlapping responsive flex layout on Mobile & Desktop) -->
         <div class="absolute top-2.5 inset-x-2.5 z-20 flex flex-wrap items-center justify-between gap-1.5 pointer-events-none">
@@ -249,9 +249,9 @@
           </div>
         </div>
 
-        <!-- Unmute Original Audio Prompt Button (shown if mobile browser blocks unmuted autoplay) -->
-        <button id="unmute-original-audio-btn" type="button" class="hidden absolute bottom-14 right-3 z-30 px-3 py-1.5 rounded-full bg-emerald-600/95 hover:bg-emerald-500 border border-emerald-300/60 text-white font-black text-xs items-center gap-1.5 shadow-2xl animate-bounce cursor-pointer">
-          <span>🔊 تشغيل الصوت الأصلي للفيديو</span>
+        <!-- Unmute Original Audio Prompt Button (shown when browser blocks unmuted autoplay) -->
+        <button id="unmute-original-audio-btn" type="button" class="hidden absolute bottom-14 right-3 z-30 px-3.5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 border border-emerald-300/80 text-white font-bold text-xs items-center gap-2 shadow-2xl animate-bounce cursor-pointer">
+          <span>🔊 انقر لتشغيل الصوت الأصلي</span>
         </button>
 
         <!-- Center Big Play Button -->

@@ -354,17 +354,24 @@ class VideoPlayer {
 
   unlockAudioOnUserGesture(forcePlay = false) {
     try {
+      if (this.video) {
+        this.video.defaultMuted = false;
+        this.video.removeAttribute("muted");
+        if (!this.isAudioMuted) {
+          this.video.muted = false;
+          this.video.volume = this.audioVolume > 0 ? this.audioVolume : 1.0;
+        }
+        if ((this.isPlaying || forcePlay) && this.video.paused) {
+          this.video.play().then(() => this.hideUnmutePrompt()).catch(() => {});
+        } else if (!this.video.paused && !this.isAudioMuted && this.video.muted) {
+          this.video.muted = false;
+          this.hideUnmutePrompt();
+        }
+      }
+
       const ytAud = this.getOrCreateYtAudio();
       ytAud.muted = this.isAudioMuted;
       ytAud.volume = this.isAudioMuted ? 0 : this.audioVolume;
-
-      if (this.video && this.isRealFullVideoLoaded) {
-        this.video.muted = this.isVideoOnlyStream ? true : this.isAudioMuted;
-        this.video.volume = this.isVideoOnlyStream ? 0 : this.isAudioMuted ? 0 : this.audioVolume;
-        if ((this.isPlaying || forcePlay) && this.video.paused) {
-          this.video.play().then(() => this.hideUnmutePrompt()).catch(() => {});
-        }
-      }
       if ((this.isPlaying || forcePlay) && ytAud.src && this.hasRealExternalAudio && (this.isVideoOnlyStream || this.isSynthesizedPlatformStream)) {
         if (ytAud.paused) {
           ytAud.play().then(() => this.hideUnmutePrompt()).catch(() => {});
@@ -947,11 +954,23 @@ class VideoPlayer {
         this.isPlaying = true;
         if (this.centerPlayBtn) this.centerPlayBtn.classList.add("opacity-0", "pointer-events-none");
         this.updatePlayBtnIcons(true);
-        this.video.play().catch(() => {
-          this.video.muted = true;
-          this.video.play().catch(() => {});
-          this.showUnmutePrompt();
-        });
+        this.video.defaultMuted = false;
+        this.video.removeAttribute("muted");
+        this.video.muted = false;
+        this.video.volume = this.audioVolume > 0 ? this.audioVolume : 1.0;
+        this.isAudioMuted = false;
+        this.updateVolumeIcon(this.video.volume);
+
+        this.video.play()
+          .then(() => {
+            this.hideUnmutePrompt();
+          })
+          .catch(() => {
+            // Autoplay with sound blocked by browser policy until user interacts
+            this.video.muted = true;
+            this.video.play().catch(() => {});
+            this.showUnmutePrompt();
+          });
       }
       return;
     }
@@ -1191,6 +1210,13 @@ class VideoPlayer {
       this.isPlaying = true;
       if (this.centerPlayBtn) this.centerPlayBtn.classList.add("opacity-0", "pointer-events-none");
       this.updatePlayBtnIcons(true);
+      if (!this.isAudioMuted) {
+        this.video.defaultMuted = false;
+        this.video.removeAttribute("muted");
+        this.video.muted = false;
+        this.video.volume = this.audioVolume > 0 ? this.audioVolume : 1.0;
+        this.hideUnmutePrompt();
+      }
       this.video.play().catch(() => {});
       if (this.isVideoOnlyStream && this.ytAudioEl && this.hasRealExternalAudio) {
         try {
@@ -1212,14 +1238,23 @@ class VideoPlayer {
   }
 
   toggleMute() {
-    if (this.isAudioMuted || this.audioVolume === 0) {
+    const isCurrentlyMuted = this.isAudioMuted || (this.video && this.video.muted) || this.audioVolume === 0;
+    if (isCurrentlyMuted) {
       this.isAudioMuted = false;
-      this.setVolume(this.previousVolume || 1.0);
+      const targetVol = this.previousVolume > 0 ? this.previousVolume : 1.0;
+      this.setVolume(targetVol);
+      if (this.video) {
+        this.video.defaultMuted = false;
+        this.video.removeAttribute("muted");
+        this.video.muted = false;
+      }
       this.unlockAudioOnUserGesture(true);
+      this.hideUnmutePrompt();
     } else {
       this.previousVolume = this.audioVolume || 1.0;
       this.isAudioMuted = true;
       this.setVolume(0);
+      if (this.video) this.video.muted = true;
     }
   }
 
@@ -1229,7 +1264,13 @@ class VideoPlayer {
     this.isAudioMuted = val === 0;
     if (this.video && !this.isSynthesizedPlatformStream && !this.isVideoOnlyStream) {
       this.video.volume = val;
-      this.video.muted = val === 0;
+      this.video.defaultMuted = val === 0;
+      if (val === 0) {
+        this.video.muted = true;
+      } else {
+        this.video.removeAttribute("muted");
+        this.video.muted = false;
+      }
     }
     if (this.ytAudioEl) {
       this.ytAudioEl.volume = val;
