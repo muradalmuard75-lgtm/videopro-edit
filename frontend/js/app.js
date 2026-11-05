@@ -1386,11 +1386,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const percentBadge = document.getElementById("upload-percentage-badge");
     const progressBar = document.getElementById("upload-progress-bar");
     const statusText = document.getElementById("upload-status-text");
+    const sizeDisplay = document.getElementById("upload-size-display");
+    const speedDisplay = document.getElementById("upload-speed-display");
 
     if (ytBtn) ytBtn.disabled = true;
     if (ytStatus) {
       ytStatus.classList.remove("hidden");
-      ytStatus.innerText = "⏳ جاري تنزيل ملف الفيديو من يوتيوب إلى منصتك (MP4)... 10%";
+      ytStatus.innerText = "⏳ جاري تنزيل ملف الفيديو من يوتيوب إلى منصتك (MP4)...";
     }
 
     if (uploadModal) {
@@ -1399,14 +1401,63 @@ document.addEventListener("DOMContentLoaded", () => {
       if (nameDisplay) nameDisplay.innerText = `YouTube Video (${ytId}) • ${quality}`;
       if (percentBadge) percentBadge.innerText = "15%";
       if (progressBar) progressBar.style.width = "15%";
-      if (statusText) statusText.innerText = "جاري تنزيل الفيديو من يوتيوب إلى منصتك الخاصة...";
+      if (sizeDisplay) sizeDisplay.innerText = "جاري فحص الحجم...";
+      if (speedDisplay) speedDisplay.innerText = "جاري الاتصال...";
+      if (statusText) statusText.innerText = "جاري فحص الجودة والاتصال بسيرفرات يوتيوب...";
     }
 
+    let simulatedPct = 15;
+    const progressPollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/youtube/progress/${ytId}`);
+        if (res.ok) {
+          const prog = await res.json();
+          if (prog) {
+            if (typeof prog.percent === "number") {
+              simulatedPct = Math.max(simulatedPct, Math.min(96, prog.percent));
+            }
+            if (percentBadge) percentBadge.innerText = `${Math.floor(simulatedPct)}%`;
+            if (progressBar) progressBar.style.width = `${simulatedPct}%`;
+            if (statusText && prog.message) statusText.innerText = prog.message;
+            if (ytStatus) ytStatus.innerText = `⏳ ${prog.message || "جاري التنزيل..."} (${Math.floor(simulatedPct)}%)`;
+
+            if (sizeDisplay) {
+              if (prog.total_bytes > 0) {
+                const dlMB = (prog.downloaded_bytes / (1024 * 1024)).toFixed(1);
+                const totMB = (prog.total_bytes / (1024 * 1024)).toFixed(1);
+                sizeDisplay.innerText = `${dlMB} MB / ${totMB} MB`;
+              } else if (prog.downloaded_bytes > 0) {
+                const dlMB = (prog.downloaded_bytes / (1024 * 1024)).toFixed(1);
+                sizeDisplay.innerText = `${dlMB} MB تم تنزيلها`;
+              }
+            }
+
+            if (speedDisplay) {
+              if (prog.speed_bytes > 0) {
+                const spdMB = (prog.speed_bytes / (1024 * 1024)).toFixed(1);
+                speedDisplay.innerText = `${spdMB} MB/s`;
+              } else {
+                speedDisplay.innerText = "سحب مستمر...";
+              }
+            }
+          }
+        }
+      } catch (_) {}
+
+      // Smooth incremental ticker in between network chunks so the UI NEVER looks stuck
+      if (simulatedPct < 90) {
+        simulatedPct += 0.4;
+        if (percentBadge) percentBadge.innerText = `${Math.floor(simulatedPct)}%`;
+        if (progressBar) progressBar.style.width = `${simulatedPct}%`;
+      }
+    }, 500);
+
     window.__ON_YT_PROGRESS__ = (pct, msg) => {
-      if (percentBadge) percentBadge.innerText = `${pct}%`;
-      if (progressBar) progressBar.style.width = `${pct}%`;
+      simulatedPct = Math.max(simulatedPct, pct);
+      if (percentBadge) percentBadge.innerText = `${Math.floor(simulatedPct)}%`;
+      if (progressBar) progressBar.style.width = `${simulatedPct}%`;
       if (statusText && msg) statusText.innerText = msg;
-      if (ytStatus) ytStatus.innerText = `⏳ ${msg || "جاري التنزيل..."} (${pct}%)`;
+      if (ytStatus) ytStatus.innerText = `⏳ ${msg || "جاري التنزيل..."} (${Math.floor(simulatedPct)}%)`;
     };
 
     try {
@@ -1422,6 +1473,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!resp.ok || !data.success) {
         throw new Error(data.detail || data.error || "تعذر تنزيل الفيديو من الرابط");
       }
+
+      clearInterval(progressPollInterval);
+      if (percentBadge) percentBadge.innerText = "100%";
+      if (progressBar) progressBar.style.width = "100%";
+      if (statusText) statusText.innerText = "✅ اكتمل التنزيل بنجاح، جاري فتح الاستوديو...";
 
       window.currentVideoId = data.video_id;
       window.currentYtId = data.yt_id || ytId;
@@ -1548,6 +1604,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       timeline.showToast(`❌ ${err.message}`);
     } finally {
+      if (typeof progressPollInterval !== "undefined") clearInterval(progressPollInterval);
       window.__ON_YT_PROGRESS__ = null;
       if (ytBtn) ytBtn.disabled = false;
     }

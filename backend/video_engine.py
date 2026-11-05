@@ -10,6 +10,67 @@ import urllib.request
 import urllib.parse
 from typing import List, Dict, Any, Optional
 
+YT_DOWNLOAD_PROGRESS: Dict[str, Dict[str, Any]] = {}
+
+
+def get_yt_download_progress(yt_id: str) -> Dict[str, Any]:
+    """Retrieve live progress of an active YouTube download."""
+    return YT_DOWNLOAD_PROGRESS.get(
+        yt_id,
+        {
+            "status": "starting",
+            "percent": 15.0,
+            "downloaded_bytes": 0,
+            "total_bytes": 0,
+            "downloaded_mb": 0,
+            "total_mb": 0,
+            "speed_bytes": 0,
+            "speed_mb": 0,
+            "eta": 0,
+            "message": "جاري فحص الجودة والاتصال بسيرفرات يوتيوب...",
+        },
+    )
+
+
+def make_progress_hook(yt_id: str):
+    """Callback hook for yt-dlp to track real download progress in real time."""
+    def hook(d: Dict[str, Any]):
+        if d.get("status") == "downloading":
+            total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
+            downloaded = d.get("downloaded_bytes", 0)
+            speed = d.get("speed") or 0
+            eta = d.get("eta") or 0
+            percent = min(92.0, max(15.0, round((downloaded / total * 100.0), 1))) if total > 0 else 25.0
+            dl_mb = round(downloaded / (1024 * 1024), 1)
+            tot_mb = round(total / (1024 * 1024), 1) if total > 0 else 0
+            spd_mb = round(speed / (1024 * 1024), 1) if speed > 0 else 0
+            YT_DOWNLOAD_PROGRESS[yt_id] = {
+                "status": "downloading",
+                "percent": percent,
+                "downloaded_bytes": downloaded,
+                "total_bytes": total,
+                "downloaded_mb": dl_mb,
+                "total_mb": tot_mb,
+                "speed_bytes": speed,
+                "speed_mb": spd_mb,
+                "eta": eta,
+                "message": f"جاري سحب الفيديو والصوت بأعلى جودة ({percent}%)...",
+            }
+        elif d.get("status") == "finished":
+            YT_DOWNLOAD_PROGRESS[yt_id] = {
+                "status": "finished",
+                "percent": 95.0,
+                "downloaded_bytes": 0,
+                "total_bytes": 0,
+                "downloaded_mb": 0,
+                "total_mb": 0,
+                "speed_bytes": 0,
+                "speed_mb": 0,
+                "eta": 0,
+                "message": "اكتمل تنزيل الملف، جاري دمج الصوت والترجمة ومعالجة المشغل...",
+            }
+    return hook
+
 
 def run_command(cmd: List[str]) -> subprocess.CompletedProcess:
     """Run an external command and return the completed process."""
@@ -264,6 +325,19 @@ def fetch_youtube_video(
     os.makedirs(uploads_dir, exist_ok=True)
     prefix = "ytshort" if is_short else "ytvideo"
 
+    YT_DOWNLOAD_PROGRESS[yt_id] = {
+        "status": "starting",
+        "percent": 15.0,
+        "downloaded_bytes": 0,
+        "total_bytes": 0,
+        "downloaded_mb": 0,
+        "total_mb": 0,
+        "speed_bytes": 0,
+        "speed_mb": 0,
+        "eta": 0,
+        "message": "جاري فحص الجودة والاتصال بسيرفرات يوتيوب...",
+    }
+
     quality_lower = (quality or "best").lower()
 
     # Reuse already downloaded video if present in uploads_dir and satisfies quality
@@ -366,6 +440,7 @@ def fetch_youtube_video(
                 "noplaylist": True,
                 "socket_timeout": 20,
                 "nocheckcertificate": True,
+                "progress_hooks": [make_progress_hook(yt_id)],
             }
             if profile:
                 ydl_opts["extractor_args"] = {"youtube": {"player_client": profile}}
@@ -636,6 +711,19 @@ def fetch_youtube_video(
                     break
             except Exception:
                 pass
+
+    YT_DOWNLOAD_PROGRESS[yt_id] = {
+        "status": "completed",
+        "percent": 100.0,
+        "downloaded_bytes": info.get("size_bytes", 0),
+        "total_bytes": info.get("size_bytes", 0),
+        "downloaded_mb": info.get("size_mb", 0),
+        "total_mb": info.get("size_mb", 0),
+        "speed_bytes": 0,
+        "speed_mb": 0,
+        "eta": 0,
+        "message": "✅ تم اكتمال تنزيل ومعالجة الفيديو بنجاح!",
+    }
 
     return {
         "success": True,

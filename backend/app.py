@@ -218,6 +218,13 @@ def api_youtube_fetch(
     return res
 
 
+@app.get("/api/youtube/progress/{yt_id}")
+def api_youtube_progress(yt_id: str):
+    """Return real-time download and processing progress for a YouTube video."""
+    from video_engine import get_yt_download_progress
+    return get_yt_download_progress(yt_id)
+
+
 @app.get("/api/video/info")
 async def video_info(video_id: str = "sample"):
     """Get video technical specifications."""
