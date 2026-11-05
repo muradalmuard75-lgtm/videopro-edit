@@ -244,7 +244,7 @@ def get_youtube_metadata(url: str) -> Dict[str, Any]:
 def fetch_youtube_video(
     url: str,
     uploads_dir: str,
-    quality: str = "1080p",
+    quality: str = "best",
     fallback_sample_path: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
@@ -264,7 +264,9 @@ def fetch_youtube_video(
     os.makedirs(uploads_dir, exist_ok=True)
     prefix = "ytshort" if is_short else "ytvideo"
 
-    # Reuse already downloaded video if present in uploads_dir (instant response!)
+    quality_lower = (quality or "best").lower()
+
+    # Reuse already downloaded video if present in uploads_dir and satisfies quality
     existing_cands = sorted(
         [
             f for f in glob.glob(os.path.join(uploads_dir, f"{prefix}_{yt_id}_*.mp4"))
@@ -277,47 +279,69 @@ def fetch_youtube_video(
         reverse=True
     )
 
+    downloaded_ok = False
+    saved_path = ""
+    saved_name = ""
+    base_stem = ""
+
     if existing_cands:
-        saved_path = existing_cands[0]
-        saved_name = os.path.basename(saved_path)
-        base_stem = os.path.splitext(saved_name)[0]
-        downloaded_ok = True
-    else:
+        cand = existing_cands[0]
+        cand_info = get_video_info(cand)
+        cand_h = cand_info.get("height", 0)
+        # Verify cached candidate has good resolution and audio
+        if quality_lower in ("best", "max", "highest", "1080p", "4k") and cand_h < 720:
+            downloaded_ok = False
+        elif not cand_info.get("has_audio"):
+            downloaded_ok = False
+        else:
+            saved_path = cand
+            saved_name = os.path.basename(saved_path)
+            base_stem = os.path.splitext(saved_name)[0]
+            downloaded_ok = True
+
+    if not downloaded_ok:
         unique_tag = uuid.uuid4().hex[:6]
         base_stem = f"{prefix}_{yt_id}_{unique_tag}"
         saved_name = f"{base_stem}.mp4"
         saved_path = os.path.join(uploads_dir, saved_name)
-        downloaded_ok = False
 
     meta = get_youtube_metadata(url)
     title = meta.get("title") or f"YouTube {'Short' if is_short else 'Video'} {yt_id}"
 
-    max_height = 1080
-    if quality == "720p":
-        max_height = 720
-    elif quality == "480p":
-        max_height = 480
-    elif quality == "4k":
-        max_height = 2160
-
     last_error = ""
 
-    # Maximum dimension: 1920 for 1080p, 1280 for 720p, etc. Works for both horizontal 16:9 and vertical 9:16 Shorts!
-    max_dim = 1920
-    if quality == "720p":
-        max_dim = 1280
-    elif quality == "480p":
-        max_dim = 854
-    elif quality == "4k":
-        max_dim = 3840
-
     outtmpl_base = os.path.join(uploads_dir, base_stem)
-    fmt_selector = (
-        f"bestvideo[width<={max_dim}][height<={max_dim}][vcodec^=avc1]+bestaudio[ext=m4a]/"
-        f"bestvideo[width<={max_dim}][height<={max_dim}][ext=mp4]+bestaudio[ext=m4a]/"
-        f"bestvideo[width<={max_dim}][height<={max_dim}]+bestaudio/"
-        f"best[width<={max_dim}][height<={max_dim}]/best"
-    )
+
+    if quality_lower in ("best", "max", "highest", "auto"):
+        # Select absolute highest quality available on YouTube
+        # Prioritize H.264/AVC1 up to 1080p/4K with AAC audio for silky browser playback, with full fallback
+        fmt_selector = (
+            "bestvideo[ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/"
+            "bestvideo[vcodec^=avc1]+bestaudio[ext=m4a]/"
+            "bestvideo[ext=mp4]+bestaudio[ext=m4a]/"
+            "bestvideo+bestaudio[ext=m4a]/"
+            "bestvideo+bestaudio/"
+            "best"
+        )
+    else:
+        max_dim = 1920
+        if quality_lower == "720p":
+            max_dim = 1280
+        elif quality_lower == "480p":
+            max_dim = 854
+        elif quality_lower in ("4k", "2160p"):
+            max_dim = 3840
+        elif quality_lower in ("1440p", "2k"):
+            max_dim = 2560
+        else:
+            max_dim = 1920
+
+        fmt_selector = (
+            f"bestvideo[width<={max_dim}][height<={max_dim}][vcodec^=avc1]+bestaudio[ext=m4a]/"
+            f"bestvideo[width<={max_dim}][height<={max_dim}][ext=mp4]+bestaudio[ext=m4a]/"
+            f"bestvideo[width<={max_dim}][height<={max_dim}]+bestaudio/"
+            f"best[width<={max_dim}][height<={max_dim}]/best"
+        )
 
     # Strategy 1: Python yt_dlp library with default and resilient modern profiles (never force ios first)
     client_profiles: List[Optional[List[str]]] = [

@@ -1368,7 +1368,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return null;
   }
 
-  async function fetchYouTubeIntoStudio(rawUrl, quality = "1080p") {
+  async function fetchYouTubeIntoStudio(rawUrl, quality = "best") {
     player.unlockAudioOnUserGesture();
     const url = (rawUrl || "").trim();
     const ytId = extractYouTubeId(url);
@@ -1557,14 +1557,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("youtube-fetch-btn")?.addEventListener("click", () => {
     const input = document.getElementById("youtube-url-input");
-    const quality = document.getElementById("youtube-quality-select")?.value || "1080p";
+    const quality = document.getElementById("youtube-quality-select")?.value || "best";
     fetchYouTubeIntoStudio(input?.value, quality);
   });
 
   document.getElementById("youtube-url-input")?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      const quality = document.getElementById("youtube-quality-select")?.value || "1080p";
+      const quality = document.getElementById("youtube-quality-select")?.value || "best";
       fetchYouTubeIntoStudio(e.target.value, quality);
     }
   });
@@ -1575,7 +1575,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (input && input.value.trim()) {
       const topInput = document.getElementById("youtube-url-input");
       if (topInput) topInput.value = input.value.trim();
-      fetchYouTubeIntoStudio(input.value.trim(), "1080p");
+      fetchYouTubeIntoStudio(input.value.trim(), "best");
     } else {
       document.getElementById("youtube-url-input")?.focus();
       timeline.showToast("الصق رابط فيديو يوتيوب أو Shorts في الحقل المخصص");

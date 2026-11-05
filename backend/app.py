@@ -201,7 +201,7 @@ def api_youtube_info(url: str = Form(...)):
 @app.post("/api/youtube/fetch")
 def api_youtube_fetch(
     url: str = Form(...),
-    quality: str = Form("1080p"),
+    quality: str = Form("best"),
 ):
     """
     Fetch a YouTube video or YouTube Short into the studio workspace so all VideoPro tools
