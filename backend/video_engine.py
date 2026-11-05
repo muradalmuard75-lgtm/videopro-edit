@@ -742,6 +742,57 @@ def fetch_youtube_video(
     }
 
 
+def load_video_cues(file_path: str) -> List[Dict[str, Any]]:
+    """Find and parse existing subtitle cues for a video file if present."""
+    base = os.path.splitext(file_path)[0]
+    candidates = [
+        f"{file_path}.vtt",
+        f"{base}.vtt",
+        f"{file_path}.srt",
+        f"{base}.srt",
+    ] + glob.glob(f"{base}*.vtt")
+    for cand in candidates:
+        if os.path.exists(cand) and os.path.getsize(cand) > 50:
+            try:
+                from ai_subtitles import parse_vtt_or_srt_file
+                cues = parse_vtt_or_srt_file(cand)
+                if cues:
+                    return cues
+            except Exception:
+                pass
+    return []
+
+
+def slice_and_shift_cues(
+    cues: List[Dict[str, Any]],
+    start_sec: float,
+    end_sec: float
+) -> List[Dict[str, Any]]:
+    """
+    Extract only the subtitle cues that fall within [start_sec, end_sec]
+    and precisely re-anchor their timestamps to start at 0.00s!
+    """
+    from ai_subtitles import format_timecode
+    sliced = []
+    duration = end_sec - start_sec
+    for c in cues:
+        c_s = float(c.get("start_sec") if c.get("start_sec") is not None else c.get("start", 0))
+        c_e = float(c.get("end_sec") if c.get("end_sec") is not None else c.get("end", 0))
+        if c_e > start_sec and c_s < end_sec:
+            new_s = max(0.0, c_s - start_sec)
+            new_e = min(duration, c_e - start_sec)
+            if new_e > new_s:
+                sliced.append({
+                    "id": len(sliced) + 1,
+                    "start_sec": round(new_s, 2),
+                    "end_sec": round(new_e, 2),
+                    "start": format_timecode(new_s),
+                    "end": format_timecode(new_e),
+                    "text": str(c.get("text", "")).strip(),
+                })
+    return sliced
+
+
 def split_video_by_interval(
     file_path: str,
     output_dir: str,
@@ -753,11 +804,15 @@ def split_video_by_interval(
     """
     Split a video into segments of interval_sec seconds (e.g. 15s, 30s, 60s, 120s, custom)
     OR by intelligent scene detection (split_mode='scene').
+    Automatically generates frame-accurate, time-shifted subtitles for EACH separate clip!
     """
     info = get_video_info(file_path)
     total_duration = info.get("duration", 0.0)
     if total_duration <= 0:
         return {"error": "Invalid video duration"}
+
+    original_cues = load_video_cues(file_path)
+    from ai_subtitles import build_vtt
 
     os.makedirs(output_dir, exist_ok=True)
     chunks: List[Dict[str, Any]] = []
@@ -845,6 +900,15 @@ def split_video_by_interval(
 
         if os.path.exists(chunk_path):
             chunk_size = os.path.getsize(chunk_path)
+            # Sliced and re-anchored subtitles starting at 0.0s for this exact chunk!
+            chunk_cues = slice_and_shift_cues(original_cues, start, end)
+            if chunk_cues:
+                try:
+                    with open(f"{chunk_path}.vtt", "w", encoding="utf-8") as vf:
+                        vf.write(build_vtt(chunk_cues))
+                except Exception:
+                    pass
+
             chunks.append({
                 "part": part_idx,
                 "filename": chunk_name,
@@ -855,6 +919,8 @@ def split_video_by_interval(
                 "formatted_range": f"{format_time(start)} - {format_time(end)}",
                 "size_mb": round(chunk_size / (1024 * 1024), 2),
                 "url": f"/api/download/part/{os.path.basename(output_dir)}/{chunk_name}",
+                "cues": chunk_cues,
+                "cues_count": len(chunk_cues),
             })
 
     zip_filename = f"{prefix}_all_parts.zip"
@@ -863,6 +929,9 @@ def split_video_by_interval(
         for ch in chunks:
             if os.path.exists(ch["file_path"]):
                 zipf.write(ch["file_path"], arcname=ch["filename"])
+            vtt_p = f"{ch['file_path']}.vtt"
+            if os.path.exists(vtt_p):
+                zipf.write(vtt_p, arcname=f"{ch['filename']}.vtt")
 
     return {
         "success": True,
@@ -890,6 +959,16 @@ def trim_video_range(
     s = max(0.0, min(float(start_sec), total_duration - 0.5))
     e = max(s + 0.5, min(float(end_sec), total_duration))
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    original_cues = load_video_cues(file_path)
+    trimmed_cues = slice_and_shift_cues(original_cues, s, e)
+    if trimmed_cues:
+        from ai_subtitles import build_vtt
+        try:
+            with open(f"{output_path}.vtt", "w", encoding="utf-8") as vf:
+                vf.write(build_vtt(trimmed_cues))
+        except Exception:
+            pass
 
     if reencode:
         cmd = [
@@ -938,6 +1017,8 @@ def trim_video_range(
         "duration": round(e - s, 2),
         "formatted_range": f"{format_time(s)} - {format_time(e)}",
         "size_mb": out_info.get("size_mb", 0.0),
+        "cues": trimmed_cues,
+        "cues_count": len(trimmed_cues),
     }
 
 

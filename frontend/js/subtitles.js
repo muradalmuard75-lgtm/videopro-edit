@@ -483,6 +483,9 @@ class SubtitlesManager {
       }
 
       this.cues = data.cues || [];
+      if (!window.currentVideoId?.startsWith("clip_") && !window.currentVideoId?.startsWith("trim_")) {
+        window.__ORIGINAL_SUBTITLE_CUES__ = JSON.parse(JSON.stringify(this.cues));
+      }
       this.renderCuesList();
       this.updateTimelineSubtitleBlocks();
       this.applySubtitleStyling();
@@ -752,6 +755,9 @@ class SubtitlesManager {
       }
 
       this.cues = data.cues || [];
+      if (!window.currentVideoId?.startsWith("clip_") && !window.currentVideoId?.startsWith("trim_")) {
+        window.__ORIGINAL_SUBTITLE_CUES__ = JSON.parse(JSON.stringify(this.cues));
+      }
       this.renderCuesList();
       this.updateTimelineSubtitleBlocks();
       this.applySubtitleStyling();

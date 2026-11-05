@@ -331,33 +331,135 @@ class VideoSplitter {
 }
 
 window.VideoSplitter = VideoSplitter;
-window.previewChunk = function (url, partTitle, startSec, endSec) {
+
+window.previewChunk = function (url, partTitle, startSec, endSec, chunkCues) {
   const player = window.videoPlayerInstance;
   const timeline = window.timelineInstance;
+  const subtitles = window.subtitlesInstance;
   const video = document.getElementById("main-video");
 
+  // 1. Snapshot master full video and master subtitles once
+  if (
+    !window.__ORIGINAL_VIDEO_SRC__ &&
+    video &&
+    video.src &&
+    !video.src.includes("/part/") &&
+    !video.src.includes("/trim_")
+  ) {
+    window.__ORIGINAL_VIDEO_SRC__ = video.src;
+  }
+  if (
+    !window.__ORIGINAL_VIDEO_ID__ &&
+    window.currentVideoId &&
+    !window.currentVideoId.startsWith("clip_") &&
+    !window.currentVideoId.startsWith("trim_")
+  ) {
+    window.__ORIGINAL_VIDEO_ID__ = window.currentVideoId;
+  }
+  if (
+    !window.__ORIGINAL_SUBTITLE_CUES__ &&
+    subtitles &&
+    subtitles.cues &&
+    subtitles.cues.length > 0
+  ) {
+    window.__ORIGINAL_SUBTITLE_CUES__ = JSON.parse(JSON.stringify(subtitles.cues));
+  }
+  if (!window.__ORIGINAL_VIDEO_DURATION__ && video && video.duration) {
+    window.__ORIGINAL_VIDEO_DURATION__ = video.duration;
+  }
+
+  const s = startSec !== undefined && startSec !== null ? Number(startSec) : 0;
+  const e = endSec !== undefined && endSec !== null ? Number(endSec) : s + 60;
+  const dur = Math.max(1, e - s);
+
+  // 2. Synchronize subtitles for this exact slice!
+  if (subtitles) {
+    let finalClipCues = [];
+    if (chunkCues && Array.isArray(chunkCues) && chunkCues.length > 0) {
+      finalClipCues = chunkCues;
+    } else {
+      const sourceCues =
+        window.__ORIGINAL_SUBTITLE_CUES__ && window.__ORIGINAL_SUBTITLE_CUES__.length > 0
+          ? window.__ORIGINAL_SUBTITLE_CUES__
+          : subtitles.cues || [];
+
+      finalClipCues = sourceCues
+        .filter((c) => {
+          const cS = c.start_sec !== undefined ? Number(c.start_sec) : Number(c.start || 0);
+          const cE = c.end_sec !== undefined ? Number(c.end_sec) : Number(c.end || 0);
+          return cE > s && cS < e;
+        })
+        .map((c, idx) => {
+          const cS = c.start_sec !== undefined ? Number(c.start_sec) : Number(c.start || 0);
+          const cE = c.end_sec !== undefined ? Number(c.end_sec) : Number(c.end || 0);
+          const newStart = Math.max(0, parseFloat((cS - s).toFixed(2)));
+          const newEnd = Math.min(dur, parseFloat((cE - s).toFixed(2)));
+          return {
+            ...c,
+            id: idx + 1,
+            start_sec: newStart,
+            end_sec: newEnd,
+            start: subtitles.formatTimecode ? subtitles.formatTimecode(newStart) : `${newStart.toFixed(1)}s`,
+            end: subtitles.formatTimecode ? subtitles.formatTimecode(newEnd) : `${newEnd.toFixed(1)}s`,
+          };
+        });
+    }
+
+    subtitles.cues = finalClipCues;
+    subtitles.renderCuesList();
+    subtitles.updateTimelineSubtitleBlocks();
+    subtitles.applySubtitleStyling();
+    subtitles.renderActiveSubtitle(0);
+  }
+
+  // 3. Switch player video to the cut clip
   if (player) {
     player.hideEmptyState();
-    if (
-      player.isSynthesizedPlatformStream ||
-      (startSec !== undefined && endSec !== undefined && (!url || url.startsWith("blob:")))
-    ) {
-      player.previewSegmentBounds =
-        startSec !== undefined && endSec !== undefined
-          ? { start: Number(startSec), end: Number(endSec) }
-          : null;
-      if (startSec !== undefined) {
-        player.seekTo(Number(startSec));
-      }
-      if (!player.isPlaying) {
-        player.togglePlay();
-      }
-    } else if (video && url) {
+    if (video && url) {
       player.previewSegmentBounds = null;
       video.src = url;
       video.load();
+      video.currentTime = 0;
       video.play().catch(() => {});
     }
+  }
+
+  // 4. Update timeline duration
+  if (timeline) {
+    timeline.duration = dur;
+    timeline.setTime(0);
+    timeline.renderRuler();
+    timeline.renderFilmstrip();
+  }
+
+  // 5. Update workspace video id
+  if (url) {
+    const filename = url.split("/").pop();
+    window.currentVideoId = filename;
+  }
+
+  // 6. Display "العودة للفيديو الكامل" button
+  let restoreBtn = document.getElementById("player-restore-original-btn");
+  if (!restoreBtn) {
+    restoreBtn = document.createElement("button");
+    restoreBtn.id = "player-restore-original-btn";
+    restoreBtn.type = "button";
+    restoreBtn.className =
+      "px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] shadow-lg flex items-center gap-1 transition cursor-pointer border border-indigo-400/40 mr-2";
+    restoreBtn.innerHTML = "<span>🔄</span> <span>العودة للفيديو الكامل</span>";
+    restoreBtn.onclick = () => window.restoreOriginalFullVideo();
+    const badgeEl = document.getElementById("player-badge-text");
+    if (badgeEl && badgeEl.parentElement) {
+      badgeEl.parentElement.appendChild(restoreBtn);
+    }
+  }
+  if (restoreBtn) {
+    restoreBtn.classList.remove("hidden");
+  }
+
+  const badgeText = document.getElementById("player-badge-text");
+  if (badgeText) {
+    badgeText.innerText = `${partTitle || "مقطع مقصوص"} (${dur.toFixed(0)}ث)`;
   }
 
   document.getElementById("splitter-modal")?.classList.add("hidden");
@@ -369,7 +471,47 @@ window.previewChunk = function (url, partTitle, startSec, endSec) {
   window.scrollTo({ top: 0, behavior: "smooth" });
   if (timeline) {
     timeline.showToast(
-      partTitle ? `🎬 جاري معاينة "${partTitle}" في المشغل` : "🎬 جاري معاينة المقطع في المشغل"
+      `✂️ تم تحميل "${partTitle || "المقطع"}" ومزامنة ترجمته بالملي ثانية من 00:00!`
     );
+  }
+};
+
+window.restoreOriginalFullVideo = function () {
+  const video = document.getElementById("main-video");
+  const player = window.videoPlayerInstance;
+  const timeline = window.timelineInstance;
+  const subtitles = window.subtitlesInstance;
+
+  if (window.__ORIGINAL_VIDEO_SRC__ && video) {
+    video.src = window.__ORIGINAL_VIDEO_SRC__;
+    video.load();
+    video.currentTime = 0;
+    video.play().catch(() => {});
+  }
+  if (window.__ORIGINAL_VIDEO_ID__) {
+    window.currentVideoId = window.__ORIGINAL_VIDEO_ID__;
+  }
+  if (subtitles && window.__ORIGINAL_SUBTITLE_CUES__) {
+    subtitles.cues = JSON.parse(JSON.stringify(window.__ORIGINAL_SUBTITLE_CUES__));
+    subtitles.renderCuesList();
+    subtitles.updateTimelineSubtitleBlocks();
+    subtitles.applySubtitleStyling();
+    subtitles.renderActiveSubtitle(0);
+  }
+
+  const restoreBtn = document.getElementById("player-restore-original-btn");
+  if (restoreBtn) restoreBtn.classList.add("hidden");
+
+  const badgeText = document.getElementById("player-badge-text");
+  if (badgeText) {
+    badgeText.innerText = "1080p Full HD";
+  }
+
+  if (timeline) {
+    timeline.duration = window.__ORIGINAL_VIDEO_DURATION__ || 60;
+    timeline.setTime(0);
+    timeline.renderRuler();
+    timeline.renderFilmstrip();
+    timeline.showToast("🔄 تمت استعادة الفيديو الأصلي الكامل وترجمته بنجاح!");
   }
 };

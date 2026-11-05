@@ -1487,6 +1487,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const dur = Number(data.info?.duration) > 0 ? Number(data.info.duration) : isShort ? 35 : 90;
       const cachedYt = window.__YT_REAL_CACHE__?.[window.currentYtId] || {};
 
+      window.__ORIGINAL_VIDEO_SRC__ = data.preview_url || `/api/video/stream/${data.video_id}`;
+      window.__ORIGINAL_VIDEO_ID__ = data.video_id;
+      window.__ORIGINAL_VIDEO_DURATION__ = dur;
+      if (data.cues && Array.isArray(data.cues) && data.cues.length > 0) {
+        window.__ORIGINAL_SUBTITLE_CUES__ = JSON.parse(JSON.stringify(data.cues));
+      } else {
+        window.__ORIGINAL_SUBTITLE_CUES__ = [];
+      }
+
       if (subtitles) {
         if (data.cues && Array.isArray(data.cues) && data.cues.length > 0) {
           subtitles.cues = data.cues;
